@@ -10,7 +10,7 @@
 ![GitHub API](https://img.shields.io/badge/GitHub_API-GraphQL-181717?style=flat-square&logo=github)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 
-[🌐 Live Demo](https://your-skyline.vercel.app) · [Quick Start](#quick-start) · [Embed](#embed-on-your-portfolio) · [Themes](#themes)
+[🌐 Live Demo]([https://your-skyline.vercel.app](https://git-contra.vercel.app/)) · [Quick Start](#quick-start) · [Embed](#embed-on-your-portfolio) · [Themes](#themes)
 
 ---
 
@@ -302,6 +302,6 @@ Pull requests are welcome. For large changes please open an issue first to discu
 
 Made with lots of coffee and too many commits
 
-[⬡ Try GitContra Live](https://your-skyline.vercel.app)
+[⬡ Try GitContra Live](https://git-contra.vercel.app/)
 
 If this helped you, consider starring the repo ⭐
