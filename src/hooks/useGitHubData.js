@@ -1,48 +1,29 @@
 /**
  * useGitHubData.js
  *
- * Fetches contribution data from the GitHub GraphQL API.
+ * Fetches contribution data using the public GitHub contributions proxy.
+ * No token required — username only.
  *
- * Usage:
- *   const { data, loading, error, fetch } = useGitHubData();
- *   fetch(username, token);
+ * Primary:  https://github-contributions-api.jogruber.de/v4/{username}
+ * Fallback: https://github-contributions.vercel.app/api?username={username}
  *
  * Returns data as [{ date: "YYYY-MM-DD", count: number }]
  */
 
 import { useState, useCallback } from "react";
 
-const GITHUB_GRAPHQL = "https://api.github.com/graphql";
-
-const QUERY = `
-  query($login: String!) {
-    user(login: $login) {
-      name
-      avatarUrl
-      contributionsCollection {
-        contributionCalendar {
-          totalContributions
-          weeks {
-            contributionDays {
-              date
-              contributionCount
-            }
-          }
-        }
-      }
-    }
-  }
-`;
+const PRIMARY = (u) => `https://github-contributions-api.jogruber.de/v4/${u}?y=last`;
+const FALLBACK = (u) => `https://github-contributions.vercel.app/api?username=${u}`;
 
 export function useGitHubData() {
-  const [data,    setData]    = useState(null);
-  const [profile, setProfile] = useState(null); // { name, avatarUrl }
+  const [data, setData] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState(null);
+  const [error, setError] = useState(null);
 
-  const fetchData = useCallback(async (username, token) => {
-    if (!username || !token) {
-      setError("Username and token are required.");
+  const fetchData = useCallback(async (username) => {
+    if (!username?.trim()) {
+      setError("Please enter a GitHub username.");
       return false;
     }
 
@@ -51,35 +32,44 @@ export function useGitHubData() {
     setData(null);
 
     try {
-      const res = await fetch(GITHUB_GRAPHQL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `bearer ${token}`,
-        },
-        body: JSON.stringify({ query: QUERY, variables: { login: username } }),
-      });
+      // Try primary proxy first
+      let days = null;
 
-      if (!res.ok) {
-        throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
+      try {
+        const res = await fetch(PRIMARY(username.trim()));
+        if (res.ok) {
+          const json = await res.json();
+          // jogruber API: { contributions: [{ date, count }] }
+          if (Array.isArray(json.contributions)) {
+            days = json.contributions.map(d => ({
+              date: d.date,
+              count: d.count ?? 0,
+            }));
+          }
+        }
+      } catch (_) { /* fall through to fallback */ }
+
+      // Fallback proxy
+      if (!days) {
+        const res = await fetch(FALLBACK(username.trim()));
+        if (!res.ok) throw new Error(`User "${username}" not found.`);
+        const json = await res.json();
+        // vercel proxy: { contributions: { [date]: count } } or similar
+        if (json.contributions && typeof json.contributions === "object") {
+          days = Object.entries(json.contributions).map(([date, count]) => ({
+            date,
+            count: Number(count) || 0,
+          }));
+        } else {
+          throw new Error(`Could not load contributions for "${username}".`);
+        }
       }
 
-      const json = await res.json();
-
-      if (json.errors) {
-        const msg = json.errors[0]?.message ?? "Unknown GraphQL error";
-        throw new Error(msg);
+      if (!days || days.length === 0) {
+        throw new Error(`No contribution data found for "${username}".`);
       }
 
-      const user = json.data?.user;
-      if (!user) throw new Error(`User "${username}" not found.`);
-
-      // Flatten weeks → days
-      const days = user.contributionsCollection.contributionCalendar.weeks
-        .flatMap(w => w.contributionDays)
-        .map(d => ({ date: d.date, count: d.contributionCount }));
-
-      setProfile({ name: user.name || username, avatarUrl: user.avatarUrl });
+      setProfile({ name: username.trim(), avatarUrl: `https://github.com/${username.trim()}.png?size=32` });
       setData(days);
       setLoading(false);
       return true;
