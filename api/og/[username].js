@@ -8,10 +8,10 @@
  *   GET /api/og/torvalds?theme=noir  → SVG with noir theme
  *
  * Embed in README:
- *   ![My Skyline](https://gitskyline.natrajx.in/api/og/YOUR_USERNAME)
+ *   ![My Skyline](https://gitcity.natrajx.in/api/og/YOUR_USERNAME)
  *
  * Embed in HTML:
- *   <img src="https://gitskyline.natrajx.in/api/og/YOUR_USERNAME?theme=ocean" />
+ *   <img src="https://gitcity.natrajx.in/api/og/YOUR_USERNAME?theme=ocean" />
  */
 
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
@@ -118,7 +118,7 @@ function buildSVG(username, data, theme) {
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
   <rect width="${W}" height="${H}" rx="10" fill="${t.bg}"/>
   <text x="${PAD_X}" y="18" font-family="monospace" font-size="11" font-weight="bold" fill="${t.accent}">${name || username}'s GitSkyline</text>
-  <text x="${PAD_X}" y="32" font-family="monospace" font-size="9" fill="${t.muted}">${total.toLocaleString()} contributions in the last year · gitskyline.natrajx.in</text>
+  <text x="${PAD_X}" y="32" font-family="monospace" font-size="9" fill="${t.muted}">${total.toLocaleString()} contributions in the last year · gitcity.natrajx.in</text>
   ${cells}
   <text x="${PAD_X}" y="${H - 8}" font-family="monospace" font-size="8" fill="${t.muted}">Less</text>
   ${[0, 1, 2, 3, 4].map((l, i) => `<rect x="${PAD_X + 30 + i * 13}" y="${H - 16}" width="${CELL}" height="${CELL}" rx="2" fill="${t.levels[l]}"/>`).join("")}

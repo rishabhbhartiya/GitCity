@@ -1,13 +1,6 @@
 /**
- * ContributionGraph3D.jsx — GitSkyline
- *
- * Features:
- *  ✓ Time range filters: This Year / Last 12 Mo / 6 Mo / 3 Mo / Month / Week
- *  ✓ 3D Skyline ↔ Bird's Eye toggle
- *  ✓ 5 themes
- *  ✓ No overflow:hidden on outer wrapper — graph never clips
- *  ✓ Stats recompute for selected time range
- *  ✓ Month labels deduped in filtered view
+ * ContributionGraph3D.jsx — GitCity
+ * gitcity.natrajx.in
  */
 
 import { useState, useMemo } from "react";
@@ -24,57 +17,97 @@ import { ThemePicker } from "./ThemePicker";
 import { ViewToggle } from "./ViewToggle";
 import { GraphLegend } from "./GraphLegend";
 
-// ── Time filter helpers ───────────────────────────────────────────────────────
-const TIME_FILTERS = [
-  { key: "12m", label: "Last 12 Mo" },
-  { key: "year", label: "This Year" },
-  { key: "6m", label: "Last 6 Mo" },
-  { key: "3m", label: "Last 3 Mo" },
-  { key: "month", label: "This Month" },
-  { key: "week", label: "This Week" },
-];
+// ── Filter helpers ────────────────────────────────────────────────────────────
 
-function getCutoff(range) {
+function getDateRange(range, availableYears) {
   const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+
+  // Specific year selected — e.g. "2023"
+  if (/^\d{4}$/.test(range)) {
+    const y = parseInt(range);
+    return {
+      from: `${y}-01-01`,
+      to: `${y}-12-31`,
+    };
+  }
+
   switch (range) {
-    case "year": return new Date(today.getFullYear(), 0, 1);
-    case "12m": { const d = new Date(today); d.setFullYear(d.getFullYear() - 1); return d; }
-    case "6m": { const d = new Date(today); d.setMonth(d.getMonth() - 6); return d; }
-    case "3m": { const d = new Date(today); d.setMonth(d.getMonth() - 3); return d; }
-    case "month": return new Date(today.getFullYear(), today.getMonth(), 1);
-    case "week": { const d = new Date(today); d.setDate(d.getDate() - d.getDay()); return d; }
-    default: { const d = new Date(today); d.setFullYear(d.getFullYear() - 1); return d; }
+    case "all": return { from: null, to: null };
+    case "12m": {
+      const d = new Date(today); d.setFullYear(d.getFullYear() - 1);
+      return { from: d.toISOString().slice(0, 10), to: todayStr };
+    }
+    case "6m": {
+      const d = new Date(today); d.setMonth(d.getMonth() - 6);
+      return { from: d.toISOString().slice(0, 10), to: todayStr };
+    }
+    case "3m": {
+      const d = new Date(today); d.setMonth(d.getMonth() - 3);
+      return { from: d.toISOString().slice(0, 10), to: todayStr };
+    }
+    case "month":
+      return { from: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`, to: todayStr };
+    case "week": {
+      const d = new Date(today); d.setDate(d.getDate() - d.getDay());
+      return { from: d.toISOString().slice(0, 10), to: todayStr };
+    }
+    default: {
+      const d = new Date(today); d.setFullYear(d.getFullYear() - 1);
+      return { from: d.toISOString().slice(0, 10), to: todayStr };
+    }
   }
 }
 
-function applyFilter(cells, range) {
-  const cutoffStr = getCutoff(range).toISOString().slice(0, 10);
-  const filtered = cells.filter((c) => c.date >= cutoffStr);
+function applyFilter(cells, range, availableYears) {
+  const { from, to } = getDateRange(range, availableYears);
+
+  let filtered = cells;
+  if (from) filtered = filtered.filter(c => c.date >= from);
+  if (to) filtered = filtered.filter(c => c.date <= to);
   if (!filtered.length) return filtered;
-  const minWeek = Math.min(...filtered.map((c) => c.week));
-  return filtered.map((c) => ({ ...c, week: c.week - minWeek }));
+
+  // For a specific year — pad to full 52/53 week grid (Jan 1 → Dec 31)
+  if (/^\d{4}$/.test(range)) {
+    const y = parseInt(range);
+    const jan1 = new Date(`${y}-01-01`);
+    const startDow = jan1.getDay(); // 0=Sun
+
+    // Re-index: week 0 starts on the Sunday on or before Jan 1
+    return filtered.map(c => {
+      const date = new Date(c.date);
+      const diffMs = date - jan1;
+      const diffDays = Math.floor(diffMs / 86400000) + startDow;
+      const week = Math.floor(diffDays / 7);
+      const day = date.getDay();
+      return { ...c, week, day };
+    });
+  }
+
+  // Rolling ranges — re-index weeks from 0
+  const minWeek = Math.min(...filtered.map(c => c.week));
+  return filtered.map(c => ({ ...c, week: c.week - minWeek }));
 }
 
 function calcStats(cells) {
-  if (!cells.length) return { total: 0, maxCount: 0, busiest: null, maxStreak: 0, curStreak: 0, activeDays: 0, avgPerDay: 0 };
+  if (!cells.length) return { total: 0, maxCount: 0, busiest: null, maxStreak: 0, curStreak: 0, activeDays: 0 };
   const total = cells.reduce((s, c) => s + c.count, 0);
-  const maxCount = Math.max(...cells.map((c) => c.count));
-  const busiest = cells.find((c) => c.count === maxCount) ?? null;
+  const maxCount = Math.max(...cells.map(c => c.count));
+  const busiest = cells.find(c => c.count === maxCount) ?? null;
   let maxStreak = 0, cur = 0;
-  cells.forEach((c) => { if (c.count > 0) { cur++; if (cur > maxStreak) maxStreak = cur; } else cur = 0; });
+  cells.forEach(c => { if (c.count > 0) { cur++; if (cur > maxStreak) maxStreak = cur; } else cur = 0; });
   let curStreak = 0;
   for (let i = cells.length - 1; i >= 0; i--) { if (cells[i].count > 0) curStreak++; else break; }
-  const activeDays = cells.filter((c) => c.count > 0).length;
-  const avgPerDay = activeDays ? Math.round(total / activeDays) : 0;
-  return { total, maxCount, busiest, maxStreak, curStreak, activeDays, avgPerDay };
+  const activeDays = cells.filter(c => c.count > 0).length;
+  return { total, maxCount, busiest, maxStreak, curStreak, activeDays };
 }
 
 function calcMonthLabels(cells) {
   const seenKey = new Set(), labels = [];
   const byWeek = {};
-  cells.forEach((c) => { if (!byWeek[c.week]) byWeek[c.week] = []; byWeek[c.week].push(c); });
-  Object.keys(byWeek).map(Number).sort((a, b) => a - b).forEach((week) => {
-    const sun = byWeek[week].find((c) => c.day === 0) || byWeek[week][0];
+  cells.forEach(c => { (byWeek[c.week] ??= []).push(c); });
+  Object.keys(byWeek).map(Number).sort((a, b) => a - b).forEach(week => {
+    const sun = byWeek[week].find(c => c.day === 0) || byWeek[week][0];
     const d = new Date(sun.date);
     const key = `${d.getFullYear()}-${d.getMonth()}`;
     if (!seenKey.has(key)) {
@@ -89,7 +122,7 @@ function calcMonthLabels(cells) {
 export function ContributionGraph3D({
   contributions: rawContributions = null,
   themeName = DEFAULT_THEME,
-  title = "GitSkyline",
+  title = "GitCity",
 }) {
   const [activeTheme, setActiveTheme] = useState(themeName);
   const [view, setView] = useState("iso");
@@ -100,13 +133,13 @@ export function ContributionGraph3D({
   const mouse = useMousePosition();
   const mounted = useMountAnimation(`${activeTheme}-${view}-${timeRange}`);
 
-  // Raw full-year data
-  const { cells: allCells } = useContributionData(rawContributions);
+  const { cells: allCells, availableYears } = useContributionData(rawContributions);
 
-  // Apply time filter + re-index weeks
-  const filteredCells = useMemo(() => applyFilter(allCells, timeRange), [allCells, timeRange]);
+  const filteredCells = useMemo(
+    () => applyFilter(allCells, timeRange, availableYears),
+    [allCells, timeRange, availableYears]
+  );
 
-  // Painter-order sort
   const sortedCells = useMemo(
     () => [...filteredCells].sort((a, b) => {
       const s = (a.week + a.day) - (b.week + b.day);
@@ -121,6 +154,16 @@ export function ContributionGraph3D({
 
   const GridComponent = view === "iso" ? IsometricGrid : BirdsEyeGrid;
 
+  // Build filter buttons: rolling ranges + individual years
+  const rollingFilters = [
+    { key: "all", label: "All Time" },
+    { key: "12m", label: "12 Mo" },
+    { key: "6m", label: "6 Mo" },
+    { key: "3m", label: "3 Mo" },
+    { key: "month", label: "Month" },
+    { key: "week", label: "Week" },
+  ];
+
   return (
     <div style={{
       fontFamily: "'Courier New', monospace",
@@ -133,7 +176,7 @@ export function ContributionGraph3D({
       position: "relative",
       display: "flex",
       flexDirection: "column",
-      gap: "0.5rem",
+      gap: "0.4rem",
       boxSizing: "border-box",
     }}>
 
@@ -144,7 +187,6 @@ export function ContributionGraph3D({
                           linear-gradient(90deg, ${theme.border}10 1px, transparent 1px)`,
         backgroundSize: "48px 48px",
       }} />
-      {/* BG vignette */}
       <div style={{
         position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0,
         background: `radial-gradient(ellipse at 50% 25%, transparent 45%, ${theme.bg}a0 100%)`,
@@ -152,21 +194,21 @@ export function ContributionGraph3D({
 
       {/* ── HEADER ── */}
       <div style={{ position: "relative", zIndex: 1, flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
           <div>
-            <div style={{ fontSize: "0.55rem", letterSpacing: "0.2em", color: theme.muted, textTransform: "uppercase", marginBottom: "0.2rem" }}>
-              ◈ GitSkyline · gitskyline.natrajx.in
+            <div style={{ fontSize: "0.52rem", letterSpacing: "0.2em", color: theme.muted, textTransform: "uppercase", marginBottom: "0.15rem" }}>
+              ◈ GitCity · gitcity.natrajx.in
             </div>
             <h1 style={{
-              margin: 0, fontSize: "1.75rem", fontWeight: 900, letterSpacing: "-0.03em",
+              margin: 0, fontSize: "1.6rem", fontWeight: 900, letterSpacing: "-0.03em",
               color: theme.accent,
               textShadow: `0 0 25px ${theme.glow}55, 0 0 50px ${theme.glow}20`,
             }}>{title}</h1>
-            <p style={{ margin: "0.2rem 0 0", color: theme.muted, fontSize: "0.73rem" }}>
+            <p style={{ margin: "0.15rem 0 0", color: theme.muted, fontSize: "0.68rem" }}>
               {allStats.total.toLocaleString()} contributions · all time
             </p>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem", alignItems: "flex-end" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", alignItems: "flex-end" }}>
             <ThemePicker themes={THEMES} activeTheme={activeTheme} onSelect={setActiveTheme} currentTheme={theme} />
             <ViewToggle view={view} onToggle={setView} theme={theme} />
           </div>
@@ -178,7 +220,7 @@ export function ContributionGraph3D({
         <StatsBar stats={stats} theme={theme} />
       </div>
 
-      {/* ── GRAPH PANEL ── takes remaining viewport height */}
+      {/* ── GRAPH PANEL ── */}
       <div style={{
         position: "relative", zIndex: 1,
         background: `${theme.surface}88`,
@@ -192,28 +234,30 @@ export function ContributionGraph3D({
         flexDirection: "column",
       }}>
 
-        {/* Panel toolbar */}
+        {/* Toolbar */}
         <div style={{
           flexShrink: 0,
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "0.5rem 0.85rem", flexWrap: "wrap", gap: "0.4rem",
+          padding: "0.4rem 0.85rem", flexWrap: "wrap", gap: "0.35rem",
           borderBottom: `1px solid ${theme.border}40`,
         }}>
           <div style={{
-            fontSize: "0.56rem", color: theme.muted, letterSpacing: "0.13em",
+            fontSize: "0.54rem", color: theme.muted, letterSpacing: "0.13em",
             textTransform: "uppercase",
-            background: `${theme.border}45`, padding: "0.16rem 0.45rem", borderRadius: "4px",
+            background: `${theme.border}45`, padding: "0.14rem 0.4rem", borderRadius: "4px",
           }}>
             {view === "iso" ? "⬡ Isometric 3D" : "⊞ Bird's Eye"}
           </div>
 
-          <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap" }}>
-            {TIME_FILTERS.map(({ key, label }) => {
+          {/* Filter buttons — rolling ranges + individual years */}
+          <div style={{ display: "flex", gap: "0.2rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
+            {/* Rolling filters */}
+            {rollingFilters.map(({ key, label }) => {
               const active = timeRange === key;
               return (
                 <button key={key} onClick={() => setTimeRange(key)} style={{
-                  padding: "0.18rem 0.45rem",
-                  fontSize: "0.6rem",
+                  padding: "0.16rem 0.4rem",
+                  fontSize: "0.58rem",
                   fontFamily: "inherit",
                   cursor: "pointer",
                   borderRadius: "4px",
@@ -225,6 +269,33 @@ export function ContributionGraph3D({
                   boxShadow: active ? `0 0 6px ${theme.glow}30` : "none",
                 }}>
                   {label}
+                </button>
+              );
+            })}
+
+            {/* Divider */}
+            {availableYears.length > 0 && (
+              <div style={{ width: 1, background: theme.border, margin: "0 0.1rem", alignSelf: "stretch" }} />
+            )}
+
+            {/* Year buttons — most recent first */}
+            {[...availableYears].reverse().map(year => {
+              const active = timeRange === String(year);
+              return (
+                <button key={year} onClick={() => setTimeRange(String(year))} style={{
+                  padding: "0.16rem 0.4rem",
+                  fontSize: "0.58rem",
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                  borderRadius: "4px",
+                  border: `1px solid ${active ? theme.accent : theme.border}`,
+                  background: active ? `${theme.accent}1e` : "transparent",
+                  color: active ? theme.accent : theme.muted,
+                  transition: "all 0.15s",
+                  fontWeight: active ? 700 : 400,
+                  boxShadow: active ? `0 0 6px ${theme.glow}30` : "none",
+                }}>
+                  {year}
                 </button>
               );
             })}
@@ -250,12 +321,11 @@ export function ContributionGraph3D({
         </div>
 
         {/* Legend */}
-        <div style={{ flexShrink: 0, padding: "0 0.85rem 0.5rem" }}>
+        <div style={{ flexShrink: 0, padding: "0 0.85rem 0.4rem" }}>
           <GraphLegend theme={theme} />
         </div>
       </div>
 
-      {/* ── TOOLTIP ── */}
       <Tooltip cell={hoveredCell} x={mouse.x} y={mouse.y} theme={theme} />
     </div>
   );

@@ -1,20 +1,24 @@
 {
-    "rewrites": [
+    "routes": [
         {
-            "source": "/api/contributions/:username",
-            "destination": "/api/contributions/:username"
+            "src": "/api/contributions/([a-zA-Z0-9_-]+)",
+            "dest": "/api/contributions/$1"
         },
         {
-            "source": "/api/og/:username",
-            "destination": "/api/og/:username"
+            "src": "/api/og/([a-zA-Z0-9_-]+)",
+            "dest": "/api/og/$1"
         },
         {
-            "source": "/:username.svg",
-            "destination": "/api/og/:username"
+            "src": "/([a-zA-Z0-9_-]+)\\.svg$",
+            "dest": "/api/og/$1"
         },
         {
-            "source": "/:username",
-            "destination": "/?username=:username"
+            "src": "/([a-zA-Z0-9_-]+)$",
+            "dest": "/?username=$1"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/$1"
         }
     ]
 }

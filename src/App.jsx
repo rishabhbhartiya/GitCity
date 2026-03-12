@@ -1,6 +1,6 @@
 /**
  * App.jsx — GitSkyline
- * https://gitskyline.natrajx.in
+ * https://gitcity.natrajx.in
  *
  * Auth flow (no token needed):
  *  1. ?username=torvalds in URL  → auto-fetch
@@ -205,7 +205,7 @@ function Backlink({ theme }) {
         e.currentTarget.style.color = theme.muted;
       }}
     >
-      ⬡ GitSkyline · by natrajx.in
+      ⬡ GitCity · by natrajx.in
     </a>
   );
 }
