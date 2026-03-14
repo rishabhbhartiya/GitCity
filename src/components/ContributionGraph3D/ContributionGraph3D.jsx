@@ -11,7 +11,7 @@ import { useMountAnimation } from "../../hooks/useMountAnimation";
 
 import { IsometricGrid } from "./IsometricGrid";
 import { BirdsEyeGrid } from "./BirdsEyeGrid";
-import { CitySimulation } from "./CitySimulation";
+import { CitySimulation } from "./Citysimulation";
 import { Tooltip } from "./Tooltip";
 import { StatsBar } from "./StatsBar";
 import { ThemePicker } from "./ThemePicker";
