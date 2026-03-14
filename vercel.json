@@ -1,4 +1,7 @@
 {
+    "framework": "vite",
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist",
     "routes": [
         {
             "src": "/api/contributions/([a-zA-Z0-9_-]+)",
