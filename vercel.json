@@ -2,19 +2,14 @@
     "framework": "vite",
     "buildCommand": "npm run build",
     "outputDirectory": "dist",
-    "rewrites": [
-        {
-            "source": "/api/contributions/:username",
-            "destination": "/api/contributions/:username"
-        },
-        {
-            "source": "/api/og/:username",
-            "destination": "/api/og/:username"
-        },
+    "redirects": [
         {
             "source": "/:username.svg",
-            "destination": "/api/og/:username"
-        },
+            "destination": "/api/og/:username",
+            "permanent": false
+        }
+    ],
+    "rewrites": [
         {
             "source": "/:username",
             "destination": "/index.html"
