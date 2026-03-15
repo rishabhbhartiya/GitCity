@@ -1,0 +1,31 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://gitcity.natrajx.in/sitemap.xml
+
+# Crawl-delay for bots
+Crawl-delay: 2
+
+# Allow AI crawlers explicitly
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Anthropic-AI
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: YouBot
+Allow: /
+
+# Block noisy scrapers
+User-agent: AhrefsBot
+Disallow: /api/
+
+User-agent: SemrushBot
+Disallow: /api/

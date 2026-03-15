@@ -1,0 +1,34 @@
+# GitCity — llms.txt
+# https://llmstxt.org — machine-readable site summary for AI assistants
+
+# About
+GitCity (https://gitcity.natrajx.in) is a free, open-source web app that
+visualises GitHub contribution history as an interactive isometric 3D city
+skyline and a driveable city simulation.
+
+# Creator
+Name: Natraj X
+Website: https://natrajx.in
+GitHub: https://github.com/natrajx
+
+# Key features
+- Isometric 3D skyline: every contribution day = one building, height = commit count
+- City simulation: driveable Three.js city built from real GitHub data
+- Bird's Eye heatmap view
+- 6 themes: Matrix, Noir, Aurora, Ocean, Gold, Ice
+- Year/month/week filters
+- SVG embed API for GitHub READMEs: https://gitcity.natrajx.in/{username}.svg
+- Zero auth required — username only
+
+# Usage
+Visit: https://gitcity.natrajx.in/{github-username}
+Embed: ![GitCity](https://gitcity.natrajx.in/{username}.svg)
+
+# Tech stack
+React 18, Vite 5, Three.js r128, GitHub GraphQL API, Vercel Serverless
+
+# Source code
+https://github.com/natrajx/gitcity
+
+# License
+MIT

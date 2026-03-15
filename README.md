@@ -1,377 +1,239 @@
-# GitCity
+<div align="center">
 
-**Your GitHub contribution history — reimagined as a 3D city skyline**
+<a href="https://gitcity.natrajx.in">
+  <img src="./screenshots/banner.png" alt="GitCity — GitHub Contributions as a 3D City Skyline" width="100%" />
+</a>
 
-![banner](./screenshots/banner.png)
+# ⬡ GitCity
 
-![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)
-![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white)
-![SVG](https://img.shields.io/badge/SVG-Isometric_3D-orange?style=flat-square)
-![GitHub API](https://img.shields.io/badge/GitHub_API-GraphQL-181717?style=flat-square&logo=github)
-![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
+**Your GitHub contribution history — reimagined as a living 3D city**
 
-[🌐 Live Demo](https://gitcity.natrajx.in) · [Quick Start](#quick-start) · [Embed](#embed-on-your-portfolio) · [Themes](#themes)
+[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-gitcity.natrajx.in-00ff41?style=for-the-badge&labelColor=060d06)](https://gitcity.natrajx.in)
+[![Made by Natraj X](https://img.shields.io/badge/Made_by-Natraj_X-a855f7?style=for-the-badge&labelColor=030710)](https://natrajx.in)
+[![React 18](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
+[![License MIT](https://img.shields.io/badge/License-MIT-00b4d8?style=for-the-badge)](./LICENSE)
 
----
-
-## What is GitCity?
-
-GitCity transforms your entire GitHub contribution history into an interactive isometric 3D city skyline. Every day you commit code, a building grows. The more contributions, the taller the tower.
-
-Browse all your years, switch themes, compare streaks — built entirely with React and SVG. No Canvas, no WebGL, no heavy dependencies.
-
-![demo](./screenshots/demo.png)
+</div>
 
 ---
 
-## See it live — rishabhbhartiya's Skyline
+## 🏙️ See it live — your skyline in one line
 
-[![GitCity Skyline](./screenshots/demo.png)](https://gitcity.natrajx.in/rishabhbhartiya)
+Drop this into any GitHub README, portfolio, or blog post:
 
-View the full interactive skyline → [gitcity.natrajx.in/rishabhbhartiya](https://gitcity.natrajx.in/rishabhbhartiya)
+```markdown
+[![My GitCity Skyline](https://gitcity.natrajx.in/YOUR_USERNAME.svg)](https://gitcity.natrajx.in/YOUR_USERNAME)
+```
 
-Once deployed, replace the image above with the live SVG embed:
+**rishabhbhartiya's skyline — rendered live from the API:**
 
-```md
 [![GitCity Skyline](https://gitcity.natrajx.in/rishabhbhartiya.svg)](https://gitcity.natrajx.in/rishabhbhartiya)
-```
+
+> Every building = one day of commits. The taller the tower, the more you shipped.
 
 ---
 
-## Features
+## ✨ What is GitCity?
 
-- **⬡ Isometric 3D Skyline** — dimetric projection, proportional building heights, windows, antennas
-- **⊞ Bird's Eye View** — classic GitHub-style heatmap toggle
-- **🎨 6 Themes** — Matrix, Noir, Aurora, Ocean, Gold, Ice
-- **📅 All-Years Data** — full contribution history from the day you joined GitHub
-- **🗓 Year Filters** — jump to any specific year (exact 52-53 week grid per year)
-- **⏱ Rolling Filters** — All Time, 12 Mo, 6 Mo, 3 Mo, Month, Week
-- **📊 Live Stats** — total commits, peak day, longest streak, current streak
-- **🔗 URL Params** — shareable links, pre-loaded by username and theme
-- **💾 Remember Me** — auto-loads on return via localStorage
-- **🖼 SVG API** — embed your skyline in any README or portfolio as an image
-- **📱 Responsive** — fits any viewport, tooltip flips to stay in bounds
-- **🚫 Zero client dependencies** — only React 18 + Vite
+GitCity fetches your **entire GitHub contribution history** via the GitHub GraphQL API and renders it as:
+
+| View | Description |
+|------|-------------|
+| **⬡ 3D Skyline** | Isometric SVG city — buildings grow with commit count |
+| **🏎️ City Simulation** | Drive a Three.js city built from your real commit data |
+| **⊞ Bird's Eye** | Classic contribution heatmap, reimagined |
+
+No personal access token required. Enter your username and go.
 
 ---
 
-## Screenshots
+## 🎨 Themes
 
-> Add your own screenshots by creating a `screenshots/` folder in the repo root.
+Six handcrafted themes — switch instantly:
 
-| Matrix Theme | Noir Theme |
-|---|---|
-| ![matrix](./screenshots/matrix.png) | ![noir](./screenshots/noir.png) |
-
-| Ocean Theme | Aurora Theme | Gold Theme | Ice Theme |
-|---|---|---|---|
-| ![ocean](./screenshots/ocean.png) | ![aurora](./screenshots/aurora.png) | ![gold](./screenshots/gold.png) | ![ice](./screenshots/ice.png) |
-
-| Login Screen | Year Filter View |
-|---|---|
-| ![login](./screenshots/login.png) | ![year](./screenshots/year.png) |
+| Theme | Preview |
+|-------|---------|
+| **Matrix** | [![matrix](https://img.shields.io/badge/Matrix-00ff41?style=flat-square&labelColor=060d06)](https://gitcity.natrajx.in/rishabhbhartiya?theme=matrix) |
+| **Noir** | [![noir](https://img.shields.io/badge/Noir-00d4ff?style=flat-square&labelColor=04080f)](https://gitcity.natrajx.in/rishabhbhartiya?theme=noir) |
+| **Aurora** | [![aurora](https://img.shields.io/badge/Aurora-a855f7?style=flat-square&labelColor=030710)](https://gitcity.natrajx.in/rishabhbhartiya?theme=aurora) |
+| **Ocean** | [![ocean](https://img.shields.io/badge/Ocean-00b4d8?style=flat-square&labelColor=020c14)](https://gitcity.natrajx.in/rishabhbhartiya?theme=ocean) |
+| **Gold** | [![gold](https://img.shields.io/badge/Gold-ffd700?style=flat-square&labelColor=0c0900)](https://gitcity.natrajx.in/rishabhbhartiya?theme=gold) |
+| **Ice** | [![ice](https://img.shields.io/badge/Ice-a8c8ff?style=flat-square&labelColor=060810)](https://gitcity.natrajx.in/rishabhbhartiya?theme=ice) |
 
 ---
 
-## Quick Start
+## 🔗 Embed API
 
-### Prerequisites
+The SVG embed API is **dynamic** — it re-renders from live GitHub data on each request.
 
-- Node.js 18+
-- npm or yarn
-- Vercel CLI (`npm i -g vercel`) for local dev with API functions
+### Basic embed
 
-### Run Locally
-
-```bash
-# 1. Clone the repo
-git clone https://github.com/yourname/gitcity.git
-cd gitcity
-
-# 2. Install dependencies
-npm install
-
-# 3. Create your local env file (see Environment Variables below)
-echo "GITHUB_TOKEN=ghp_xxxxxxxxxxxx" > .env.local
-
-# 4. Start dev server (Vercel CLI — runs API functions locally)
-vercel dev
-
-# 5. Open in your browser at http://localhost:3000
+```markdown
+![GitCity](https://gitcity.natrajx.in/YOUR_USERNAME.svg)
 ```
 
-> Use `vercel dev` instead of `npm run dev`. The `/api` functions only run under Vercel CLI.
+### With theme
 
----
-
-## Environment Variables
-
-GitCity uses a server-side GitHub token so users never need to provide one.
-
-**For local dev** — create `.env.local` in your project root:
-
-```
-GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+```markdown
+![GitCity Noir](https://gitcity.natrajx.in/YOUR_USERNAME.svg?theme=noir)
 ```
 
-**For production** — add it in Vercel:
+Available themes: `matrix` · `noir` · `aurora` · `ocean` · `gold` · `ice`
 
-1. Go to [vercel.com](https://vercel.com) → your project → Settings → Environment Variables
-2. Key: `GITHUB_TOKEN` / Value: your token / Environment: all three (Production, Preview, Development)
-3. Save → Redeploy
+### HTML (full control)
 
-**Generate a token:**
-
-1. Go to [github.com/settings/tokens/new](https://github.com/settings/tokens/new)
-2. Name: `GitCity Server`
-3. Type: Classic token
-4. Expiry: No expiration
-5. Scope: tick only `read:user`
-6. Generate and copy immediately
-
-> Add `.env.local` to your `.gitignore` — never commit your token.
-
----
-
-## Embed on Your Portfolio
-
-### Option 1 — README Image (SVG)
-
-Drop this into any GitHub README for a live contribution card:
-
-```md
-[![GitCity Skyline](https://gitcity.natrajx.in/YOUR_USERNAME.svg)](https://gitcity.natrajx.in/YOUR_USERNAME)
+```html
+<a href="https://gitcity.natrajx.in/YOUR_USERNAME">
+  <img src="https://gitcity.natrajx.in/YOUR_USERNAME.svg?theme=aurora"
+       alt="My GitHub Skyline" width="100%" />
+</a>
 ```
 
-With a specific theme:
-
-```md
-[![GitCity Skyline](https://gitcity.natrajx.in/YOUR_USERNAME.svg?theme=ocean)](https://gitcity.natrajx.in/YOUR_USERNAME)
-```
-
-SVG theme options: `matrix` `noir` `aurora` `ocean` `gold` `ice`
-
----
-
-### Option 2 — Direct URL
-
-Share or link to anyone's interactive skyline:
-
-```
-https://gitcity.natrajx.in/YOUR_USERNAME
-https://gitcity.natrajx.in/YOUR_USERNAME?theme=noir
-```
-
-URL Parameters:
-
-| Parameter | Required | Description | Example |
-|-----------|----------|-------------|---------|
-| `username` | Yes | GitHub username | `torvalds` |
-| `theme` | No | Initial colour theme | `ocean` |
-
----
-
-### Option 3 — iframe Embed
-
-Embed the full interactive skyline in any HTML page or portfolio site:
+### iframe (interactive, for portfolios)
 
 ```html
 <iframe
-  src="https://gitcity.natrajx.in/YOUR_USERNAME?theme=noir"
-  width="100%"
-  height="500px"
+  src="https://gitcity.natrajx.in/YOUR_USERNAME"
+  width="100%" height="500"
   frameborder="0"
-  style="border-radius: 12px; overflow: hidden;"
-  title="GitCity — My Contribution Skyline"
-></iframe>
-```
-
-Tips:
-- The iframe is fully interactive — hover tooltips, theme switching, year filters, view toggle all work
-- Use `theme=` to match your portfolio colour scheme
-- `height="480px"` fits cleanly in a single viewport section
-
----
-
-### Option 4 — React Component
-
-Copy these folders into your existing React project:
-
-```
-src/components/ContributionGraph3D/
-src/hooks/
-src/constants/
-src/utils/
-```
-
-Then import and use:
-
-```jsx
-import { ContributionGraph3D } from "./components/ContributionGraph3D";
-
-// With live data from your own API
-<ContributionGraph3D
-  contributions={data}    // [{ date: "YYYY-MM-DD", count: number }]
-  themeName="ocean"
-  title="My Skyline"
-/>
-
-// With random demo data
-<ContributionGraph3D
-  contributions={null}
-  themeName="matrix"
-  title="GitCity"
-/>
+  title="GitHub Contribution Skyline">
+</iframe>
 ```
 
 ---
 
-## Deploy Your Own Instance
+## 🚀 Quick Start
 
-### Vercel (Recommended)
+### Option A — Use the hosted version (recommended)
+
+Just go to **[gitcity.natrajx.in/YOUR_USERNAME](https://gitcity.natrajx.in)** — no setup needed.
+
+### Option B — Self-host
 
 ```bash
-npm i -g vercel
-vercel
+# 1. Clone
+git clone https://github.com/natrajx/gitcity
+cd gitcity
+
+# 2. Install
+npm install
+
+# 3. Set your GitHub token (for API calls)
+echo "GITHUB_TOKEN=ghp_your_token_here" > .env.local
+
+# 4. Run locally
+vercel dev          # uses /api serverless functions
+# OR
+npm run dev         # Vite only (no API — use hosted API instead)
+
+# 5. Deploy to Vercel
+vercel --prod
 ```
 
-Or via the dashboard:
+### Environment variables
 
-1. Push this repo to GitHub
-2. Go to [vercel.com](https://vercel.com) → New Project → Import your repo
-3. Framework preset: Vite (auto-detected)
-4. Build command: `npm run build`
-5. Output directory: `dist`
-6. Add `GITHUB_TOKEN` environment variable (see above)
-7. Click Deploy
-
-### Netlify
-
-Netlify supports serverless functions but requires adapting the `/api` folder to Netlify Functions format. Vercel is strongly recommended for this project.
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GITHUB_TOKEN` | Yes | GitHub Personal Access Token (read:user scope) |
 
 ---
 
-## API Endpoints
+## 🤖 SEO & AI Optimisation
 
-Once deployed, three endpoints are available:
+Three files live in `public/` and are served directly from the site root:
 
-| Endpoint | Returns | Example |
-|----------|---------|---------|
-| `/USERNAME` | Interactive skyline page | `/rishabhbhartiya` |
-| `/USERNAME.svg` | SVG contribution card | `/rishabhbhartiya.svg?theme=ocean` |
-| `/api/contributions/USERNAME` | Raw JSON — all years | `/api/contributions/rishabhbhartiya` |
+| File | URL | Purpose |
+|------|-----|---------|
+| `public/robots.txt` | `/robots.txt` | Search crawler rules, AI bot allowlist, sitemap pointer |
+| `public/sitemap.xml` | `/sitemap.xml` | Pages for Google to index |
+| `public/llms.txt` | `/llms.txt` | Machine-readable summary for AI assistants (ChatGPT, Claude, Perplexity) |
 
-JSON response shape:
-
-```json
-{
-  "username": "rishabhbhartiya",
-  "years": [2022, 2023, 2024, 2025],
-  "contributions": [
-    { "date": "2022-01-01", "count": 0 },
-    { "date": "2022-01-02", "count": 4 }
-  ]
-}
-```
+**Why `public/`?** Vite copies everything in `public/` verbatim into `dist/` at build time, so these files are served at the bare URL with no routing involved — exactly what crawlers and search engines expect.
 
 ---
 
-## Themes
-
-| Name | Accent | Vibe |
-|------|--------|------|
-| `matrix` | `#00ff41` | Classic terminal green |
-| `noir` | `#00d4ff` | Dark cyberpunk cyan |
-| `aurora` | `#a855f7` | Northern lights purple |
-| `ocean` | `#00b4d8` | Deep sea teal |
-| `gold` | `#ffd700` | Pure gold towers |
-| `ice` | `#a8c8ff` | Silver-blue crystal |
-
----
-
-## Time Filters
-
-| Filter | Range |
-|--------|-------|
-| All Time | Every contribution since you joined GitHub |
-| 12 Mo | Rolling 12 months from today |
-| 6 Mo | Rolling 6 months |
-| 3 Mo | Rolling 3 months |
-| Month | Current calendar month |
-| Week | Current week |
-| 2025, 2024… | Exact Jan 1 → Dec 31 for that year (52-53 tiles) |
-
-Year buttons are generated automatically from your actual data.
-
----
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 gitcity/
+├── public/                           # ← Static files served at site root
+│   ├── robots.txt                    #   gitcity.natrajx.in/robots.txt
+│   ├── sitemap.xml                   #   gitcity.natrajx.in/sitemap.xml
+│   └── llms.txt                      #   gitcity.natrajx.in/llms.txt
 ├── api/
-│   ├── contributions/
-│   │   └── [username].js     ← serverless: fetches all-years data
-│   └── og/
-│       └── [username].js     ← serverless: generates SVG card
-├── public/
-├── screenshots/              ← add your screenshots here
-├── vercel.json               ← URL routing rules
-└── src/
-    ├── App.jsx               ← auth flow, URL params, localStorage
-    ├── components/
-    │   └── ContributionGraph3D/
-    │       ├── ContributionGraph3D.jsx
-    │       ├── GitHubConnect.jsx
-    │       ├── IsometricGrid.jsx
-    │       ├── Building.jsx
-    │       ├── BirdsEyeGrid.jsx
-    │       ├── StatsBar.jsx
-    │       ├── Tooltip.jsx
-    │       ├── ThemePicker.jsx
-    │       ├── ViewToggle.jsx
-    │       └── GraphLegend.jsx
-    ├── hooks/
-    │   ├── useGitHubData.js
-    │   ├── useContributionData.js
-    │   ├── useMountAnimation.js
-    │   └── useMousePosition.js
-    ├── constants/
-    │   ├── graph.js
-    │   └── themes.js
-    └── utils/
-        ├── dataUtils.js
-        └── colorUtils.js
+│   ├── contributions/[username].js   # Serverless: GitHub GraphQL proxy
+│   └── og/[username].js              # Serverless: SVG generator for embeds
+├── index.html                        # Root HTML with SEO/OG meta
+├── src/
+│   ├── App.jsx                       # Auth flow, URL params
+│   ├── components/ContributionGraph3D/
+│   │   ├── ContributionGraph3D.jsx   # Main graph component + filters
+│   │   ├── IsometricGrid.jsx         # SVG isometric 3D skyline
+│   │   ├── CitySimulation.jsx        # Three.js driveable city
+│   │   ├── BirdsEyeGrid.jsx          # Heatmap view
+│   │   └── Building.jsx              # Individual isometric building
+│   ├── constants/
+│   │   └── themes.js                 # 6 colour themes
+│   └── hooks/
+│       └── useGitHubData.js          # Data fetching hook
+├── vercel.json                       # Routing rules
+└── vite.config.js
 ```
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
-| Technology | Purpose |
-|------------|---------|
-| React 18 | UI components and state |
-| Vite 5 | Build tool and dev server |
-| SVG | All rendering — no Canvas, no WebGL |
-| GitHub GraphQL API | All-years contribution data |
-| Vercel Serverless | Token-safe API proxy + SVG generation |
-
----
-
-## License
-
-MIT — use it, fork it, embed it, build on it freely.
+- **[React 18](https://react.dev)** — UI
+- **[Vite 5](https://vitejs.dev)** — build
+- **[Three.js r128](https://threejs.org)** — city simulation (WebGL)
+- **SVG** — isometric skyline (pure, embeddable)
+- **[GitHub GraphQL API](https://docs.github.com/en/graphql)** — contribution data
+- **[Vercel](https://vercel.com)** — hosting + serverless
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
-Pull requests are welcome. For large changes please open an issue first.
+PRs welcome. Open an issue first for major changes.
+
+```bash
+git checkout -b feat/your-feature
+# make changes
+git commit -m "feat: your feature"
+git push origin feat/your-feature
+# open PR → main
+```
 
 ---
 
-Made with lots of coffee and too many commits
+## 🙋 About the Author
 
-[⬡ Try GitCity Live](https://gitcity.natrajx.in)
+Built by **[Natraj X](https://natrajx.in)** — developer, designer, and builder.
 
-If this helped you, consider starring the repo ⭐
+- 🌐 Portfolio & blog: **[natrajx.in](https://natrajx.in)**
+- 💼 Projects: [natrajx.in/projects](https://natrajx.in/projects)
+- ✍️ Writing: [natrajx.in/blog](https://natrajx.in/blog)
+- 🐙 GitHub: [@natrajx](https://github.com/natrajx)
+
+If GitCity is useful to you, a ⭐ on the repo and a mention helps a lot.
+
+---
+
+## 📄 License
+
+MIT © [Natraj X](https://natrajx.in) — free to use, modify, and distribute.
+
+---
+
+<div align="center">
+
+Made with ☕ by <a href="https://natrajx.in"><strong>Natraj X</strong></a>
+&nbsp;·&nbsp;
+<a href="https://gitcity.natrajx.in">gitcity.natrajx.in</a>
+&nbsp;·&nbsp;
+<a href="https://natrajx.in/projects">More projects</a>
+&nbsp;·&nbsp;
+<a href="https://natrajx.in/blog">Blog</a>
+
+</div>
