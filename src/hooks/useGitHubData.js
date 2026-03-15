@@ -1,12 +1,13 @@
 /**
- * useGitHubData.js — GitSkyline
+ * useGitHubData.js
  *
- * Fetches ALL years of contribution data from our own Vercel serverless
- * function at /api/contributions/[username].
+ * Fetches contribution data from our own serverless API first,
+ * then falls back to third-party proxies if needed.
  *
- * No token needed on the client — token lives on the server.
- *
- * Returns data as [{ date: "YYYY-MM-DD", count: number }]
+ * Priority:
+ *  1. /api/contributions/{username}  — our own Vercel function (all years)
+ *  2. github-contributions-api.jogruber.de — public proxy (last year only)
+ *  3. github-contributions.vercel.app — secondary public proxy
  */
 
 import { useState, useCallback } from "react";
@@ -18,7 +19,8 @@ export function useGitHubData() {
   const [error, setError] = useState(null);
 
   const fetchData = useCallback(async (username) => {
-    if (!username?.trim()) {
+    const user = username?.trim();
+    if (!user) {
       setError("Please enter a GitHub username.");
       return false;
     }
@@ -27,32 +29,69 @@ export function useGitHubData() {
     setError(null);
     setData(null);
 
+    let days = null;
+    let lastErr = "";
+
+    // ── 1. Own API (/api/contributions/:username) ──────────────────────────
     try {
-      const res = await fetch(`/api/contributions/${encodeURIComponent(username.trim())}`);
+      const res = await fetch(`/api/contributions/${encodeURIComponent(user)}`);
       const json = await res.json();
-
-      if (!res.ok) {
-        throw new Error(json.error || `Could not load data for "${username}".`);
+      if (res.ok && Array.isArray(json.contributions) && json.contributions.length > 0) {
+        days = json.contributions; // [{ date, count }]
+      } else {
+        lastErr = json.error || `API error ${res.status}`;
       }
+    } catch (e) {
+      lastErr = e.message;
+    }
 
-      if (!json.contributions || json.contributions.length === 0) {
-        throw new Error(`No contribution data found for "${username}".`);
-      }
+    // ── 2. jogruber public proxy ───────────────────────────────────────────
+    if (!days) {
+      try {
+        const res = await fetch(
+          `https://github-contributions-api.jogruber.de/v4/${encodeURIComponent(user)}?y=last`
+        );
+        if (res.ok) {
+          const json = await res.json();
+          if (Array.isArray(json.contributions) && json.contributions.length > 0) {
+            days = json.contributions.map(d => ({ date: d.date, count: d.count ?? 0 }));
+          }
+        }
+      } catch (_) { /* fall through */ }
+    }
 
-      setProfile({
-        name: username.trim(),
-        avatarUrl: `https://github.com/${username.trim()}.png?size=32`,
-        years: json.years ?? [],
-      });
-      setData(json.contributions);
-      setLoading(false);
-      return true;
+    // ── 3. vercel public proxy ─────────────────────────────────────────────
+    if (!days) {
+      try {
+        const res = await fetch(
+          `https://github-contributions.vercel.app/api?username=${encodeURIComponent(user)}`
+        );
+        if (res.ok) {
+          const json = await res.json();
+          if (json.contributions && typeof json.contributions === "object") {
+            const entries = Array.isArray(json.contributions)
+              ? json.contributions.map(d => ({ date: d.date, count: Number(d.count) || 0 }))
+              : Object.entries(json.contributions).map(([date, count]) => ({ date, count: Number(count) || 0 }));
+            if (entries.length > 0) days = entries;
+          }
+        }
+      } catch (_) { /* fall through */ }
+    }
 
-    } catch (err) {
-      setError(err.message);
+    if (!days || days.length === 0) {
+      setError(lastErr || `No contribution data found for "${user}". Check the username and try again.`);
       setLoading(false);
       return false;
     }
+
+    setProfile({
+      name: user,
+      avatarUrl: `https://github.com/${user}.png?size=32`,
+    });
+    setData(days);
+    setLoading(false);
+    return true;
+
   }, []);
 
   return { data, profile, loading, error, fetchData };
