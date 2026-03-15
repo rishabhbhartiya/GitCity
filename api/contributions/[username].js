@@ -28,7 +28,13 @@ async function fetchJoinYear(username, token) {
 
 async function fetchYear(username, year, token) {
   const from = `${year}-01-01T00:00:00Z`;
-  const to = `${year}-12-31T23:59:59Z`;
+  // Cap `to` at today — GitHub rejects future dates
+  const today = new Date();
+  const isCurrentYear = year === today.getFullYear();
+  const toDate = isCurrentYear
+    ? today.toISOString().replace(/\.\d{3}Z$/, "Z")
+    : `${year}-12-31T23:59:59Z`;
+  const to = toDate;
   const query = `
     query($login: String!, $from: DateTime!, $to: DateTime!) {
       user(login: $login) {
