@@ -25,7 +25,7 @@ Drop this into any GitHub README, portfolio, or blog post:
 [![My GitCity Skyline](https://gitcity.natrajx.in/api/svg?u=YOUR_USERNAME)](https://gitcity.natrajx.in/YOUR_USERNAME)
 ```
 
-**rishabhbhartiya's skyline — rendered live from the API:-**
+**rishabhbhartiya's skyline — rendered live from the API:**
 
 [![GitCity Skyline](https://gitcity.natrajx.in/api/svg?u=rishabhbhartiya)](https://gitcity.natrajx.in/rishabhbhartiya)
 
