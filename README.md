@@ -1,9 +1,7 @@
 <div align="center">
 
 <a href="https://gitcity.natrajx.in">
-  <video width="100%" autoplay loop muted playsinline>
-    <source src="./videos/3dcity.mp4" type="video/mp4">
-  </video>
+  <img src="./screenshots/3dcity.gif" alt="GitCity — GitHub Contributions as a 3D City Skyline" width="100%" />
 </a>
 
 # ⬡ GitCity
