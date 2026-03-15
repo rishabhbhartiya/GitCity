@@ -1,23 +1,20 @@
 <div align="center">
 
+![Header](https://readmeforge.natrajx.in/api/header?name=GITCITY&title=Your+GitHub+contribution+history+%E2%80%94+reimagined+as+a+living+3D+city&tagline=&metal=vintage-green&style=cyber&height=215&theme=dark)
+
 <a href="https://gitcity.natrajx.in">
   <img src="./screenshots/3dcity.gif" alt="GitCity — GitHub Contributions as a 3D City Skyline" width="100%" />
 </a>
 
-# ⬡ GitCity
 
-**Your GitHub contribution history — reimagined as a living 3D city**
-
-[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-gitcity.natrajx.in-00ff41?style=for-the-badge&labelColor=060d06)](https://gitcity.natrajx.in)
-[![Made by Natraj X](https://img.shields.io/badge/Made_by-Natraj_X-a855f7?style=for-the-badge&labelColor=030710)](https://natrajx.in)
-[![React 18](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
-[![License MIT](https://img.shields.io/badge/License-MIT-00b4d8?style=for-the-badge)](./LICENSE)
+[![LIVE DEMO](https://readmeforge.natrajx.in/api/badge?label=LIVE+DEMO&metal=vintage-green&shape=rounded&theme=dark&value=https%3A%2F%2Fgitcity.natrajx.in)](https://gitcity.natrajx.in)
+[![MADE BY:](https://readmeforge.natrajx.in/api/badge?label=MADE+BY%3A&metal=vintage-green&shape=rounded&theme=dark&value=NATRAJ-X)](https://natrajx.in)
 
 </div>
 
----
+![Divider](https://readmeforge.natrajx.in/api/divider?metal=vintage-green&style=dashed&width=1184&height=20)
 
-## 🏙️ See it live — your skyline in one line
+![See it live- Your Skyline in one Line](https://readmeforge.natrajx.in/api/text-anim?text=See+it+live-+Your+Skyline+in+one+Line&effect=explode&metal=material-green&width=597&size=32&theme=dark)
 
 Drop this into any GitHub README, portfolio, or blog post:
 
