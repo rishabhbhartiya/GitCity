@@ -25,7 +25,7 @@ Drop this into any GitHub README, portfolio, or blog post:
 
 <p align="center">
   <img 
-    src="https://readmeforge.natrajx.in/api/text-anim?text=Every+building+%3D+one+day+of+commits.+The+taller+the+tower%2C+the+more+you+shipped.&effect=typewriter&metal=material-greenS D3&width=896&size=21&theme=dark"
+    src="https://readmeforge.natrajx.in/api/text-anim?text=Every+building+%3D+one+day+of+commits.+The+taller+the+tower%2C+the+more+you+shipped.&effect=typewriter&metal=material-green&width=896&size=21&theme=dark"
     alt="Every building = one day of commits. The taller the tower, the more you shipped."
     width="1000"
   />
