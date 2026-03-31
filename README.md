@@ -239,6 +239,13 @@ If GitCity is useful to you, a ⭐ on the repo and a mention helps a lot.
 
 ---
 
+## ❓ FAQ
+
+**Is this the same as thegitcity.com?**  
+No — completely different. See [COMPARISON.md](./COMPARISON.md) for the full breakdown.
+
+---
+
 ## 📄 License
 
 MIT © [Natraj X](https://natrajx.in) — free to use, modify, and distribute.
