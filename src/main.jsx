@@ -15,3 +15,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     </HelmetProvider>
   </React.StrictMode>
 );
+
+// Remove static SEO shell once React has mounted
+document.getElementById("seo-shell")?.remove();

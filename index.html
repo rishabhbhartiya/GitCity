@@ -129,6 +129,32 @@
 </head>
 
 <body>
+  <!-- Static SEO shell — invisible to users, readable by Google -->
+  <div id="seo-shell" style="
+    position:fixed;inset:0;z-index:-1;opacity:0;pointer-events:none;
+    background:#060d06;color:#b0ffb0;font-family:'Courier New',monospace;
+    padding:3rem 2rem;max-width:860px;
+  ">
+    <h1>GitCity — Visualize Your GitHub Contributions as a 3D City</h1>
+    <p>GitCity transforms your GitHub contribution history into an interactive isometric 3D city skyline. Every commit
+      builds a skyscraper. Drive through your city, switch themes, and embed your skyline in any README — free and
+      open-source.</p>
+    <h2>Features</h2>
+    <ul>
+      <li>Interactive isometric 3D city built from your GitHub contributions</li>
+      <li>Driveable city simulation — explore your skyline from street level</li>
+      <li>6 themes: Matrix, Noir, Aurora, Ocean, Gold, Ice</li>
+      <li>Filter contributions by year, month, or week</li>
+      <li>Embeddable SVG for GitHub README and developer portfolios</li>
+      <li>Zero configuration — just enter your GitHub username</li>
+    </ul>
+    <h2>How it works</h2>
+    <p>Enter your GitHub username and GitCity fetches your public contribution data. Each day with commits becomes a
+      building — the more commits, the taller the tower. Switch to simulation mode and drive through the city you built
+      with your code.</p>
+    <p>Built by <a href="https://natrajx.in">Natraj X</a>.</p>
+  </div>
+
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
