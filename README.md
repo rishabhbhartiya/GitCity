@@ -6,10 +6,11 @@
   <img src="./screenshots/3dcity.gif" alt="GitCity — GitHub Contributions as a 3D City Skyline" width="90%" />
 </a>
 
-
+<br/>
 
 [![LIVE DEMO](https://readmeforge.natrajx.in/api/badge?label=LIVE+DEMO&metal=vintage-green&shape=rounded&theme=dark&value=https%3A%2F%2Fgitcity.natrajx.in)](https://gitcity.natrajx.in)
 [![MADE BY:](https://readmeforge.natrajx.in/api/badge?label=MADE+BY%3A&metal=vintage-green&shape=rounded&theme=dark&value=NATRAJ-X)](https://natrajx.in)
+[![Ko-fi](https://img.shields.io/badge/Support%20on-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white&style=flat-square)](https://ko-fi.com/rishabhbhartiya)
 
 </div>
 
@@ -54,8 +55,6 @@ GitCity fetches your **entire GitHub contribution history** via the GitHub Graph
 </p>
 
 No personal access token required. Enter your username and go.
-
-
 
 <a href="https://gitcity.natrajx.in">
   <img src="./screenshots/cardriving.gif" alt="GitCity — GitHub Contributions as a 3D City Skyline" width="90%" />
@@ -152,7 +151,6 @@ vercel --prod
 |----------|----------|-------------|
 | `GITHUB_TOKEN` | Yes | GitHub Personal Access Token (read:user scope) |
 
-
 ![GITHUB_TOKEN](https://readmeforge.natrajx.in/api/card-glass?title=GITHUB_TOKEN&value=%E2%9C%93&subtitle=GitHub+Personal+Access+Token+&icon=%E2%97%88&glassTheme=dark&metal=electric&width=220&height=170)
 
 ---
@@ -226,14 +224,27 @@ git push origin feat/your-feature
 
 ---
 
+## ☕ Support
+
+GitCity is free and open-source — no login, no paywall, no token required.
+
+If it made your README cooler or your portfolio stand out, consider buying me a coffee. It goes directly toward hosting costs, GPU time for experiments, and building more free tools like this one.
+
+<a href="https://ko-fi.com/rishabhbhartiya">
+  <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support on Ko-fi" />
+</a>
+
+---
+
 ## 🙋 About the Author
 
-Built by **[Natraj X](https://natrajx.in)** — developer, designer, and builder.
+Built by **[Rishabh Bhartiya](https://rishabhbhartiya.natrajx.in)** — ML Engineer & full-stack developer. 3 years turning research-grade ideas into production systems at scale.
 
-- 🌐 Portfolio & blog: **[natrajx.in](https://natrajx.in)**
-- 💼 Projects: [natrajx.in/projects](https://natrajx.in/projects)
-- ✍️ Writing: [natrajx.in/blog](https://natrajx.in/blog)
-- 🐙 GitHub: [@natrajx](https://github.com/natrajx)
+- 🌐 Portfolio: **[rishabhbhartiya.natrajx.in](https://rishabhbhartiya.natrajx.in)**
+- 💼 Projects: [rishabhbhartiya.natrajx.in/projects](https://rishabhbhartiya.natrajx.in/projects)
+- ✍️ Writing: [rishabhbhartiya.natrajx.in/blog](https://rishabhbhartiya.natrajx.in/blog)
+- 🐙 GitHub: [@rishabhbhartiya](https://github.com/rishabhbhartiya)
+- ☕ Ko-fi: [ko-fi.com/rishabhbhartiya](https://ko-fi.com/rishabhbhartiya)
 
 If GitCity is useful to you, a ⭐ on the repo and a mention helps a lot.
 
@@ -248,18 +259,20 @@ No — completely different. See [COMPARISON.md](./COMPARISON.md) for the full b
 
 ## 📄 License
 
-MIT © [Natraj X](https://natrajx.in) — free to use, modify, and distribute.
+MIT © [Rishabh Bhartiya](https://rishabhbhartiya.natrajx.in) — free to use, modify, and distribute.
 
 ---
 
 <div align="center">
 
-Made with ☕ by <a href="https://natrajx.in"><strong>Natraj X</strong></a>
+Made with ☕ by <a href="https://rishabhbhartiya.natrajx.in"><strong>Rishabh Bhartiya</strong></a>
 &nbsp;·&nbsp;
 <a href="https://gitcity.natrajx.in">gitcity.natrajx.in</a>
 &nbsp;·&nbsp;
-<a href="https://natrajx.in/projects">More projects</a>
+<a href="https://rishabhbhartiya.natrajx.in/projects">More projects</a>
 &nbsp;·&nbsp;
-<a href="https://natrajx.in/blog">Blog</a>
+<a href="https://rishabhbhartiya.natrajx.in/blog">Blog</a>
+&nbsp;·&nbsp;
+<a href="https://ko-fi.com/rishabhbhartiya">☕ Ko-fi</a>
 
 </div>
