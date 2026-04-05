@@ -1,6 +1,6 @@
 /**
  * ContributionGraph3D.jsx — GitCity
- * Three views: Isometric 3D | Bird's Eye | City Simulation
+ * Four views: Isometric 3D | Bird's Eye | City Simulation 
  */
 
 import { useState, useMemo } from "react";
@@ -86,15 +86,28 @@ function calcMonthLabels(cells) {
 }
 
 // ── URL helpers ───────────────────────────────────────────────────────────────
-// internal view key → URL slug
-const VIEW_TO_SLUG = { iso: "isometric", birds: "heatmap", city: "simulation" };
-// URL slug → internal view key
-const SLUG_TO_VIEW = { isometric: "iso", heatmap: "birds", simulation: "city" };
+const VIEW_TO_SLUG = {
+  iso: "isometric",
+  birds: "heatmap",
+  city: "simulation",
+};
+const SLUG_TO_VIEW = {
+  isometric: "iso",
+  heatmap: "birds",
+  simulation: "city",
+};
 
 function getUsername() {
   const pathParts = window.location.pathname.split("/").filter(Boolean);
   return pathParts[0] || "";
 }
+
+// ── Toolbar label per view ────────────────────────────────────────────────────
+const VIEW_LABELS = {
+  iso: "⬡ Isometric 3D",
+  birds: "⊞ Bird's Eye",
+  city: "⛙ City Simulation",
+};
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export function ContributionGraph3D({
@@ -130,12 +143,12 @@ export function ContributionGraph3D({
   const monthLabels = useMemo(() => calcMonthLabels(filteredCells), [filteredCells]);
   const allStats = useMemo(() => calcStats(allCells), [allCells]);
 
-  const isSimulation = view === "city";
+  // Hide stats bar + filters + legend + tooltip for full-canvas views
+  const isFullCanvas = view === "city";
 
-  // ── View change handler — updates state + URL ─────────────────────────────
+  // ── View change — update state + URL ────────────────────────────────────────
   function handleViewChange(newView) {
     setView(newView);
-    // Path se lo, warna prop se lo
     const user = getUsername() || username;
     if (user) {
       const slug = VIEW_TO_SLUG[newView] || "isometric";
@@ -171,11 +184,11 @@ export function ContributionGraph3D({
       <div style={{
         position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0,
         backgroundImage: `linear-gradient(${theme.border}10 1px,transparent 1px),linear-gradient(90deg,${theme.border}10 1px,transparent 1px)`,
-        backgroundSize: "48px 48px"
+        backgroundSize: "48px 48px",
       }} />
       <div style={{
         position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0,
-        background: `radial-gradient(ellipse at 50% 25%,transparent 45%,${theme.bg}a0 100%)`
+        background: `radial-gradient(ellipse at 50% 25%,transparent 45%,${theme.bg}a0 100%)`,
       }} />
 
       {/* ── HEADER ── */}
@@ -187,7 +200,7 @@ export function ContributionGraph3D({
             </div>
             <h1 style={{
               margin: 0, fontSize: "1.6rem", fontWeight: 900, letterSpacing: "-0.03em", color: theme.accent,
-              textShadow: `0 0 25px ${theme.glow}55, 0 0 50px ${theme.glow}20`
+              textShadow: `0 0 25px ${theme.glow}55, 0 0 50px ${theme.glow}20`,
             }}>{title}</h1>
             <p style={{ margin: "0.15rem 0 0", color: theme.muted, fontSize: "0.68rem" }}>
               {allStats.total.toLocaleString()} contributions · all time
@@ -195,14 +208,13 @@ export function ContributionGraph3D({
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", alignItems: "flex-end" }}>
             <ThemePicker themes={THEMES} activeTheme={activeTheme} onSelect={setActiveTheme} currentTheme={theme} />
-            {/* 👇 onToggle now uses handleViewChange instead of setView */}
             <ViewToggle view={view} onToggle={handleViewChange} theme={theme} />
           </div>
         </div>
       </div>
 
-      {/* ── STATS BAR — hide in simulation to save space ── */}
-      {!isSimulation && (
+      {/* ── STATS BAR — hide for full-canvas views ── */}
+      {!isFullCanvas && (
         <div style={{ position: "relative", zIndex: 1, flexShrink: 0 }}>
           <StatsBar stats={stats} theme={theme} />
         </div>
@@ -220,22 +232,23 @@ export function ContributionGraph3D({
         display: "flex", flexDirection: "column",
       }}>
 
-        {/* Toolbar — hide filter buttons in simulation */}
+        {/* ── TOOLBAR ── */}
         <div style={{
           flexShrink: 0,
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "0.4rem 0.85rem", flexWrap: "wrap", gap: "0.35rem",
           borderBottom: `1px solid ${theme.border}40`,
         }}>
+          {/* View label badge */}
           <div style={{
             fontSize: "0.54rem", color: theme.muted, letterSpacing: "0.13em", textTransform: "uppercase",
             background: `${theme.border}45`, padding: "0.14rem 0.4rem", borderRadius: "4px",
           }}>
-            {view === "iso" ? "⬡ Isometric 3D" : view === "birds" ? "⊞ Bird's Eye" : "⛙ City Simulation"}
+            {VIEW_LABELS[view] || "⬡ Isometric 3D"}
           </div>
 
-          {/* Only show filters for non-simulation views */}
-          {!isSimulation && (
+          {/* Time filters — only for iso + birds */}
+          {!isFullCanvas && (
             <div style={{ display: "flex", gap: "0.2rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
               {rollingFilters.map(({ key, label }) => {
                 const active = timeRange === key;
@@ -278,27 +291,35 @@ export function ContributionGraph3D({
           )}
 
           {/* Simulation hint */}
-          {isSimulation && (
+          {view === "city" && (
             <div style={{ fontSize: "0.55rem", color: theme.muted, opacity: 0.7 }}>
               WASD / Arrow keys to drive · All-time data
             </div>
           )}
         </div>
 
-        {/* Content area */}
-        <div style={{ flex: 1, minHeight: 0, padding: isSimulation ? 0 : "0.4rem 0.75rem 0.25rem", overflow: "hidden" }}>
+        {/* ── CONTENT AREA ── */}
+        <div style={{
+          flex: 1, minHeight: 0,
+          padding: isFullCanvas ? 0 : "0.4rem 0.75rem 0.25rem",
+          overflow: "hidden",
+        }}>
           {view === "iso" && (
             <IsometricGrid
               sortedCells={sortedCells} stats={stats} monthLabels={monthLabels}
-              theme={theme} mounted={mounted} hoveredDate={hoveredCell?.date ?? null} onHover={setHoveredCell}
+              theme={theme} mounted={mounted}
+              hoveredDate={hoveredCell?.date ?? null} onHover={setHoveredCell}
             />
           )}
+
           {view === "birds" && (
             <BirdsEyeGrid
               sortedCells={sortedCells} stats={stats} monthLabels={monthLabels}
-              theme={theme} mounted={mounted} hoveredDate={hoveredCell?.date ?? null} onHover={setHoveredCell}
+              theme={theme} mounted={mounted}
+              hoveredDate={hoveredCell?.date ?? null} onHover={setHoveredCell}
             />
           )}
+
           {view === "city" && (
             <CitySimulation
               cells={allCells}
@@ -307,18 +328,19 @@ export function ContributionGraph3D({
               profile={profile}
             />
           )}
+
         </div>
 
-        {/* Legend — only for non-simulation */}
-        {!isSimulation && (
+        {/* Legend — only for iso + birds */}
+        {!isFullCanvas && (
           <div style={{ flexShrink: 0, padding: "0 0.85rem 0.4rem" }}>
             <GraphLegend theme={theme} />
           </div>
         )}
       </div>
 
-      {/* Tooltip — only for non-simulation */}
-      {!isSimulation && (
+      {/* Tooltip — only for iso + birds */}
+      {!isFullCanvas && (
         <Tooltip cell={hoveredCell} x={mouse.x} y={mouse.y} theme={theme} />
       )}
     </div>
