@@ -165,7 +165,7 @@ export function GitHubConnect({ onConnect, loading, error, theme }) {
   }
 
   const ready = !loading && username.trim().length > 0;
-  const demos = ["torvalds", "gaearon", "sindresorhus", "natrajx"];
+  const demos = ["cheshire137","torvalds", "gaearon", "sindresorhus"];
 
   const leftReviews = REVIEWS.slice(0, 4);
   const rightReviews = [...REVIEWS].reverse().slice(0, 4);

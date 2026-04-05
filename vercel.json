@@ -4,6 +4,18 @@
     "outputDirectory": "dist",
     "rewrites": [
         {
+            "source": "/:username/simulation",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/:username/isometric",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/:username/heatmap",
+            "destination": "/index.html"
+        },
+        {
             "source": "/:username",
             "destination": "/index.html"
         },

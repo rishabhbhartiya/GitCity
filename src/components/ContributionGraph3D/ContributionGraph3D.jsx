@@ -85,15 +85,28 @@ function calcMonthLabels(cells) {
   return labels;
 }
 
+// ── URL helpers ───────────────────────────────────────────────────────────────
+// internal view key → URL slug
+const VIEW_TO_SLUG = { iso: "isometric", birds: "heatmap", city: "simulation" };
+// URL slug → internal view key
+const SLUG_TO_VIEW = { isometric: "iso", heatmap: "birds", simulation: "city" };
+
+function getUsername() {
+  const pathParts = window.location.pathname.split("/").filter(Boolean);
+  return pathParts[0] || "";
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export function ContributionGraph3D({
   contributions: rawContributions = null,
   themeName = DEFAULT_THEME,
   title = "GitCity",
   profile = null,
+  defaultView = null,
+  username = "",
 }) {
   const [activeTheme, setActiveTheme] = useState(themeName);
-  const [view, setView] = useState("iso");
+  const [view, setView] = useState(SLUG_TO_VIEW[defaultView] || "iso");
   const [timeRange, setTimeRange] = useState("12m");
   const [hoveredCell, setHoveredCell] = useState(null);
 
@@ -118,6 +131,17 @@ export function ContributionGraph3D({
   const allStats = useMemo(() => calcStats(allCells), [allCells]);
 
   const isSimulation = view === "city";
+
+  // ── View change handler — updates state + URL ─────────────────────────────
+  function handleViewChange(newView) {
+    setView(newView);
+    // Path se lo, warna prop se lo
+    const user = getUsername() || username;
+    if (user) {
+      const slug = VIEW_TO_SLUG[newView] || "isometric";
+      window.history.pushState({}, "", `/${user}/${slug}`);
+    }
+  }
 
   const rollingFilters = [
     { key: "12m", label: "12 Months" },
@@ -171,7 +195,8 @@ export function ContributionGraph3D({
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", alignItems: "flex-end" }}>
             <ThemePicker themes={THEMES} activeTheme={activeTheme} onSelect={setActiveTheme} currentTheme={theme} />
-            <ViewToggle view={view} onToggle={setView} theme={theme} />
+            {/* 👇 onToggle now uses handleViewChange instead of setView */}
+            <ViewToggle view={view} onToggle={handleViewChange} theme={theme} />
           </div>
         </div>
       </div>

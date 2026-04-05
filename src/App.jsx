@@ -22,9 +22,13 @@ import { THEMES } from "./constants/themes";
 
 function getUrlParams() {
   const p = new URLSearchParams(window.location.search);
+  const pathParts = window.location.pathname.split("/").filter(Boolean);
+  const pathUsername = pathParts[0] || "";
+  const pathView = pathParts[1] || ""; // 'simulation', 'isometric', 'heatmap'
   return {
-    username: p.get("username") || "",
+    username: p.get("username") || pathUsername || "",
     theme: p.get("theme") || "",
+    defaultView: pathView || null,
   };
 }
 
@@ -222,6 +226,9 @@ export default function App() {
           contributions={data}
           themeName={theme}
           title={graphTitle}
+          defaultView={getUrlParams().defaultView} // 👈 yeh add karo
+          profile={profile}
+          username={username}
         />
 
         <style>{`
