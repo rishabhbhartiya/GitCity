@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Story — GitCity</title>
+    <meta name="description"
+        content="How GitCity was built, why it's different, and the full lineage of the 'GitHub as a city' concept." />
+    <link rel="canonical" href="https://gitcity.natrajx.in/story" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Serif+Display:ital@0;1&display=swap');
+
+        :root {
+            --bg: #060d06;
+            --surface: #0c1a0c;
+            --border: #1a3320;
+            --text: #b0ffb0;
+            --muted: #3d6b3d;
+            --accent: #00ff41;
+            --glow: #00ff41;
+            --dim: #1a4020;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Space Mono', monospace;
+            font-size: 14px;
+            line-height: 1.75;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Grid BG ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(var(--border)18 1px, transparent 1px),
+                linear-gradient(90deg, var(--border)18 1px, transparent 1px);
+            background-size: 48px 48px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Scanline overlay ── */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(to bottom,
+                    transparent 0px,
+                    transparent 3px,
+                    rgba(0, 0, 0, 0.07) 3px,
+                    rgba(0, 0, 0, 0.07) 4px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        main {
+            position: relative;
+            z-index: 1;
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 4rem 1.5rem 6rem;
+        }
+
+        /* ── NAV ── */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: #060d06e8;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.65rem 1.5rem;
+            font-size: 0.6rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        nav a {
+            color: var(--muted);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+
+        nav a:hover {
+            color: var(--accent);
+        }
+
+        .nav-logo {
+            color: var(--accent);
+            font-weight: 700;
+            text-shadow: 0 0 14px var(--glow)80;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        /* ── HERO ── */
+        .hero {
+            padding-top: 3rem;
+            margin-bottom: 4rem;
+        }
+
+        .eyebrow {
+            font-size: 0.58rem;
+            letter-spacing: 0.25em;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+        }
+
+        h1 {
+            font-family: 'DM Serif Display', serif;
+            font-size: clamp(2.4rem, 6vw, 4rem);
+            font-weight: 400;
+            color: var(--accent);
+            text-shadow: 0 0 40px var(--glow)40, 0 0 80px var(--glow)15;
+            line-height: 1.1;
+            margin-bottom: 1.25rem;
+        }
+
+        .hero-sub {
+            color: var(--muted);
+            font-size: 0.8rem;
+            max-width: 520px;
+            line-height: 1.8;
+        }
+
+        /* ── SECTIONS ── */
+        section {
+            margin-bottom: 4rem;
+        }
+
+        h2 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.6rem;
+            font-weight: 400;
+            font-style: italic;
+            color: var(--text);
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 0.7rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin: 1.75rem 0 0.6rem;
+        }
+
+        p {
+            color: #7ab87a;
+            margin-bottom: 1rem;
+            font-size: 0.82rem;
+        }
+
+        strong {
+            color: var(--text);
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid var(--border);
+            transition: border-color 0.15s, text-shadow 0.15s;
+        }
+
+        a:hover {
+            border-color: var(--accent);
+            text-shadow: 0 0 8px var(--glow)60;
+        }
+
+        /* ── TIMELINE ── */
+        .timeline {
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 8px;
+            bottom: 8px;
+            width: 1px;
+            background: linear-gradient(to bottom, transparent, var(--border) 10%, var(--border) 90%, transparent);
+        }
+
+        .tl-item {
+            position: relative;
+            margin-bottom: 2.25rem;
+        }
+
+        .tl-item::before {
+            content: '◈';
+            position: absolute;
+            left: -1.85rem;
+            top: 0;
+            font-size: 0.65rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .tl-item.current::before {
+            color: var(--accent);
+            text-shadow: 0 0 8px var(--glow);
+        }
+
+        .tl-year {
+            font-size: 0.6rem;
+            letter-spacing: 0.2em;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+
+        .tl-title {
+            font-size: 0.88rem;
+            color: var(--text);
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+        }
+
+        .tl-item.current .tl-title {
+            color: var(--accent);
+            text-shadow: 0 0 12px var(--glow)50;
+        }
+
+        .tl-desc {
+            font-size: 0.77rem;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        /* ── COMPARISON TABLE ── */
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1rem 0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.72rem;
+        }
+
+        thead tr {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            padding: 0.6rem 0.85rem;
+            text-align: left;
+            color: var(--muted);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            font-size: 0.58rem;
+            font-weight: 700;
+        }
+
+        td {
+            padding: 0.55rem 0.85rem;
+            color: #6a9a6a;
+            border-bottom: 1px solid var(--border)50;
+            vertical-align: top;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:nth-child(even) td {
+            background: #0a140a40;
+        }
+
+        .yes {
+            color: var(--accent);
+        }
+
+        .no {
+            color: var(--muted);
+        }
+
+        .hl {
+            color: var(--text);
+        }
+
+        /* ── CALLOUT ── */
+        .callout {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            border-radius: 6px;
+            padding: 1rem 1.25rem;
+            margin: 1.5rem 0;
+            font-size: 0.78rem;
+            color: var(--muted);
+            line-height: 1.8;
+        }
+
+        .callout strong {
+            color: var(--text);
+        }
+
+        /* ── CODE ── */
+        code {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.1em 0.4em;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.8em;
+            color: var(--accent);
+        }
+
+        pre {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            overflow-x: auto;
+            font-size: 0.75rem;
+            line-height: 1.7;
+            color: #7ab87a;
+            margin: 1rem 0;
+        }
+
+        pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            color: inherit;
+            font-size: 1em;
+        }
+
+        /* ── FEATURE PILLS ── */
+        .pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 0.75rem 0;
+        }
+
+        .pill {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.25rem 0.6rem;
+            font-size: 0.65rem;
+            color: var(--muted);
+            letter-spacing: 0.08em;
+        }
+
+        .pill.new {
+            border-color: var(--accent)60;
+            color: var(--accent);
+            background: #00ff4110;
+        }
+
+        /* ── FOOTER ── */
+        footer {
+            position: relative;
+            z-index: 1;
+            border-top: 1px solid var(--border);
+            padding: 1.5rem;
+            text-align: center;
+            font-size: 0.6rem;
+            letter-spacing: 0.15em;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        footer a {
+            color: var(--muted);
+            border-bottom-color: var(--border);
+        }
+
+        footer a:hover {
+            color: var(--accent);
+        }
+
+        /* ── ANIMATIONS ── */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero {
+            animation: fadeUp 0.6s ease both;
+        }
+
+        section {
+            animation: fadeUp 0.6s ease both;
+        }
+
+        section:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        section:nth-child(3) {
+            animation-delay: 0.15s;
+        }
+
+        section:nth-child(4) {
+            animation-delay: 0.2s;
+        }
+
+        section:nth-child(5) {
+            animation-delay: 0.25s;
+        }
+
+        section:nth-child(6) {
+            animation-delay: 0.3s;
+        }
+
+        @media (max-width: 560px) {
+            main {
+                padding: 3.5rem 1rem 5rem;
+            }
+
+            .nav-links {
+                gap: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <a href="https://gitcity.natrajx.in" class="nav-logo">⬡ GitCity</a>
+        <div class="nav-links">
+            <a href="https://gitcity.natrajx.in">Home</a>
+            <a href="https://github.com/natrajx/gitcity">GitHub</a>
+            <a href="https://natrajx.in">natrajx.in</a>
+        </div>
+    </nav>
+
+    <main>
+
+        <!-- HERO -->
+        <div class="hero">
+            <div class="eyebrow">◈ Case Study · 2026</div>
+            <h1>The Story<br>Behind GitCity</h1>
+            <p class="hero-sub">
+                Who coined "GitHub as a city," why GitCity exists, and what makes it
+                genuinely different — told honestly, with full credit to prior work.
+            </p>
+        </div>
+
+        <!-- LINEAGE -->
+        <section id="lineage">
+            <h2>Where the concept comes from</h2>
+
+            <p>
+                No one person invented the idea of rendering GitHub contributions as a 3D city.
+                It has a clear, traceable lineage going back to GitHub itself.
+            </p>
+
+            <div class="timeline">
+
+                <div class="tl-item">
+                    <div class="tl-year">2020</div>
+                    <div class="tl-title">GitHub Skyline — GitHub, Inc.</div>
+                    <div class="tl-desc">
+                        GitHub introduced the metaphor: your contribution graph rendered as 3D terrain,
+                        downloadable as an STL file. The language of "commits = building height" and the
+                        word "skyline" originate here. Every subsequent project builds on this visual grammar.
+                    </div>
+                </div>
+
+                <div class="tl-item">
+                    <div class="tl-year">~2021</div>
+                    <div class="tl-title">bentolor/gitcity — bentolor</div>
+                    <div class="tl-desc">
+                        A VR/3D exploration of a Git repository's file structure as a walkable city.
+                        Different concept (repo files, not contribution history), but predates both later
+                        projects on the "git + city" naming.
+                    </div>
+                </div>
+
+                <div class="tl-item">
+                    <div class="tl-year">2022</div>
+                    <div class="tl-title">GithubCity — Jan Hannemann (honzaap)</div>
+                    <div class="tl-desc">
+                        The first widely-known implementation of "each contribution day = one building
+                        in a Three.js 3D city." Ranked #2 on Product Hunt with 248 upvotes.
+                        honzaap's own words: <em>"GitHub already did that with GitHub Skyline and when
+                            I looked at it I thought it looked like a city."</em>
+                        This is the direct creative ancestor of the per-day building model.
+                    </div>
+                </div>
+
+                <div class="tl-item">
+                    <div class="tl-year">2025–2026</div>
+                    <div class="tl-title">thegitcity.com — Samuel Rizzon</div>
+                    <div class="tl-desc">
+                        A social-network pivot: every GitHub <em>user</em> becomes one building in a
+                        shared global city. Completely different data model from honzaap.
+                        Reached viral scale (~1M views). Requires account, offers paid cosmetics.
+                    </div>
+                </div>
+
+                <div class="tl-item current">
+                    <div class="tl-year">2026</div>
+                    <div class="tl-title">GitCity — Natraj X · <em>you are here</em></div>
+                    <div class="tl-desc">
+                        A personal developer tool. Each building = one day of <em>your</em> commit history.
+                        Three views: Isometric 3D Skyline, Bird's Eye Heatmap, and a driveable City Simulation.
+                        Embeddable as a live SVG. No account required.
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="callout">
+                <strong>Key fact:</strong> The idea of representing GitHub contributions as 3D buildings
+                is not proprietary to any individual. It originates with GitHub's own 2020 product.
+                Multiple developers have explored it independently with different angles. The concept is open.
+            </div>
+        </section>
+
+        <!-- PROBLEM -->
+        <section id="problem">
+            <h2>What problem GitCity actually solves</h2>
+
+            <p>Discovering thegitcity.com mid-build clarified what GitCity should <em>not</em> be.
+                The goals diverged immediately:</p>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Problem</th>
+                            <th>GitCity's answer</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="hl">No README embeds for 3D skylines</td>
+                            <td><code>/api/svg?u=USERNAME</code> — one-line Markdown embed</td>
+                        </tr>
+                        <tr>
+                            <td class="hl">All tools require accounts or tokens</td>
+                            <td>Username only — no OAuth, no PAT, no session</td>
+                        </tr>
+                        <tr>
+                            <td class="hl">No tool lets you inhabit your own data</td>
+                            <td>Driveable Three.js city built from real commit days</td>
+                        </tr>
+                        <tr>
+                            <td class="hl">Social tools mix your data with others</td>
+                            <td>Your city only contains your history. Nobody else.</td>
+                        </tr>
+                        <tr>
+                            <td class="hl">No all-years history</td>
+                            <td>Fetches every year since account creation</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- WHAT WAS BUILT -->
+        <section id="built">
+            <h2>What was actually built</h2>
+
+            <h3>Three distinct views</h3>
+
+            <p><strong>Isometric 3D Skyline</strong> — rendered in SVG (not canvas). The SVG choice
+                was deliberate: it makes the same render serveable as a static API response, enabling
+                README embeds. 6 themes, year/rolling filters, hover tooltips.</p>
+
+            <p><strong>Bird's Eye Heatmap</strong> — classic GitHub-style grid using the same data pipeline.
+                Good for comparing years side by side.</p>
+
+            <p><strong>City Simulation</strong> — the genuinely novel part. Your commit data becomes
+                the city geometry. Days with commits become buildings (height = commit count).
+                Days without commits become roads.</p>
+
+            <h3>Systems built from scratch for the simulation</h3>
+
+            <div class="pills">
+                <span class="pill new">CityTraffic.js — AI vehicle pathfinding</span>
+                <span class="pill new">PedestrianSystem.js — NPC walkers</span>
+                <span class="pill new">WeatherSystem.js — rain, wind, day/night</span>
+                <span class="pill new">CityAssets.js — procedural building geometry</span>
+                <span class="pill new">Player vehicle — WASD driving physics</span>
+                <span class="pill new">/api/svg — SVG embed API</span>
+                <span class="pill new">/api/og/[username] — OG image generation</span>
+            </div>
+
+            <p>None of these systems exist in honzaap's GithubCity or thegitcity.com.</p>
+
+            <h3>The embed API</h3>
+
+            <pre><code>[![My GitCity Skyline](https://gitcity.natrajx.in/api/svg?u=USERNAME)](https://gitcity.natrajx.in/USERNAME)</code></pre>
+
+            <p>Single GET request. Themed SVG. Cacheable. Works in any Markdown renderer
+                including GitHub READMEs. No equivalent exists in any prior "GitHub as city" project.</p>
+        </section>
+
+        <!-- COMPARISON -->
+        <section id="comparison">
+            <h2>Side-by-side comparison</h2>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>GitCity</th>
+                            <th>honzaap/GithubCity</th>
+                            <th>thegitcity.com</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="hl">Building represents</td>
+                            <td>One day of YOUR commits</td>
+                            <td>One day of commits</td>
+                            <td>One GitHub user</td>
+                        </tr>
+                        <tr>
+                            <td class="hl">Driveable simulation</td>
+                            <td class="yes">✅ Yes</td>
+                            <td class="no">❌ No</td>
+                            <td class="no">❌ No</td>
+                        </tr>
+                        <tr>
+                            <td class="hl">README SVG embed API</td>
+                            <td class="yes">✅ Yes</td>
+                            <td class="no">❌ No</td>
+                            <td class="no">❌ No</td>
+                        </tr>
+                        <tr>
+                            <td class="hl">Account required</td>
+                            <td class="yes">❌ No</td>
+                            <td class="yes">❌ No</td>
+                            <td class="no">✅ Yes</td>
+                        </tr>
+                        <tr>
+                            <td class="hl">Social network</td>
+                            <td class="no">❌ No</td>
+                            <td class="no">❌ No</td>
+                            <td class="yes">✅ Yes</td>
+                        </tr>
+                        <tr>
+                            <td class="hl">All-years history</td>
+                            <td class="yes">✅ Yes</td>
+                            <td class="no">❌ No</td>
+                            <td class="no">❌ No</td>
+                        </tr>
+                        <tr>
+                            <td class="hl">AI traffic + pedestrians</td>
+                            <td class="yes">✅ Yes</td>
+                            <td class="no">❌ No</td>
+                            <td class="no">❌ No</td>
+                        </tr>
+                        <tr>
+                            <td class="hl">Weather system</td>
+                            <td class="yes">✅ Yes</td>
+                            <td class="no">❌ No</td>
+                            <td class="no">❌ No</td>
+                        </tr>
+                        <tr>
+                            <td class="hl">OG image generation</td>
+                            <td class="yes">✅ Yes</td>
+                            <td class="no">❌ No</td>
+                            <td class="no">❌ No</td>
+                        </tr>
+                        <tr>
+                            <td class="hl">License</td>
+                            <td class="yes">MIT — do anything</td>
+                            <td>MIT</td>
+                            <td class="no">AGPL-3.0</td>
+                        </tr>
+                        <tr>
+                            <td class="hl">Monetisation</td>
+                            <td class="yes">Free</td>
+                            <td>Free</td>
+                            <td class="no">Paid items ($1–3)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- CLARIFICATION -->
+        <section id="clarification">
+            <h2>On the name overlap</h2>
+
+            <p>
+                The name "GitCity" overlaps with bentolor's older Kotlin VR project and sounds
+                similar to thegitcity.com. That was a mistake — a distinct name would have been smarter.
+            </p>
+
+            <p>
+                The <strong>product concept</strong> is defensible. The <strong>name choice</strong> was not careful
+                enough.
+                This document, HISTORY.md, and ACKNOWLEDGEMENTS.md exist to make the distinction clear
+                for anyone who encounters the confusion.
+            </p>
+
+            <div class="callout">
+                <strong>For Product Hunt / social discussions:</strong> "The concept of visualising
+                GitHub contributions as a 3D city originates with GitHub Skyline (2020) and
+                honzaap's GithubCity (2022). GitCity is a distinct personal developer tool —
+                not a social network — built independently with features that exist in neither
+                prior project: driveable simulation, README embed API, and no-account access."
+            </div>
+        </section>
+
+        <!-- CREDITS -->
+        <section id="credits">
+            <h2>Credits</h2>
+
+            <h3>Conceptual lineage</h3>
+            <p>
+                <strong>GitHub, Inc.</strong> — originated the skyline metaphor (2020)<br>
+                <strong>Jan Hannemann (honzaap)</strong> — first contributions-as-city Three.js implementation
+                (2022)<br>
+                <strong>Samuel Rizzon</strong> — social-network angle that clarified what GitCity should not be<br>
+                <strong>bentolor</strong> — early "git + city" naming (different concept)
+            </p>
+
+            <h3>Open source dependencies</h3>
+            <p>
+                Three.js (MIT) · React (MIT) · Vite (MIT) · react-helmet-async (MIT) · Vercel · GitHub GraphQL API
+            </p>
+
+            <p style="margin-top:1.5rem">
+                <a href="https://github.com/natrajx/gitcity/blob/main/HISTORY.md">HISTORY.md</a> ·
+                <a href="https://github.com/natrajx/gitcity/blob/main/ACKNOWLEDGEMENTS.md">ACKNOWLEDGEMENTS.md</a> ·
+                <a href="https://github.com/natrajx/gitcity/blob/main/COMPARISON.md">COMPARISON.md</a>
+            </p>
+        </section>
+
+    </main>
+
+    <footer>
+        ⬡ GitCity · <a href="https://gitcity.natrajx.in">gitcity.natrajx.in</a> ·
+        Built by <a href="https://natrajx.in">Natraj X</a> · MIT License
+    </footer>
+
+</body>
+
+</html>

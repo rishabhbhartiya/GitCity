@@ -28,110 +28,189 @@ function addCyl(parent, THREE, rTop, rBot, h, segs, mat, px, py, pz, rx = 0, ry 
     return m;
 }
 
-function addWheel(group, THREE, x, z, darkMat, chromeMat) {
-    const tire = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.36, 0.36, 0.22, 16),
-        darkMat
-    );
+// ── SHARED MATERIAL CACHE — created once, reused across all vehicles ──────────
+// Using a lazy singleton pattern keyed by THREE reference.
+let _THREE_ref = null;
+let _mats = null;
+function getSharedMats(THREE) {
+    if (_mats && _THREE_ref === THREE) return _mats;
+    _THREE_ref = THREE;
+    _mats = {
+        tire: new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.90, metalness: 0.04 }),
+        rim: new THREE.MeshStandardMaterial({ color: 0xc0c2d0, roughness: 0.18, metalness: 0.88 }),
+        hub: new THREE.MeshStandardMaterial({ color: 0xd8d8e8, roughness: 0.14, metalness: 0.92 }),
+        hlLens: new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: new THREE.Color(1, 1, 0.85), emissiveIntensity: 1.1, roughness: 0.08, transparent: true, opacity: 0.92 }),
+        hlHouse: new THREE.MeshStandardMaterial({ color: 0x222233, roughness: 0.45, metalness: 0.55 }),
+        drl: new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: new THREE.Color(0.9, 0.9, 0.8), emissiveIntensity: 0.75, roughness: 0.12 }),
+        tlLens: new THREE.MeshStandardMaterial({ color: 0xff1100, emissive: new THREE.Color(0.85, 0.04, 0), emissiveIntensity: 1.0, roughness: 0.10, transparent: true, opacity: 0.90 }),
+        tlHouse: new THREE.MeshStandardMaterial({ color: 0x1a0000, roughness: 0.50, metalness: 0.45 }),
+        tlStrip: new THREE.MeshStandardMaterial({ color: 0xff2200, emissive: new THREE.Color(0.7, 0.02, 0), emissiveIntensity: 0.85, roughness: 0.12 }),
+        chr: new THREE.MeshStandardMaterial({ color: 0xb2bac8, roughness: 0.14, metalness: 0.90 }),
+        blk: new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.88, metalness: 0.05 }),
+        glass: new THREE.MeshStandardMaterial({ color: 0x1e2d44, transparent: true, opacity: 0.66, roughness: 0.06, metalness: 0.12 }),
+        plate: new THREE.MeshStandardMaterial({ color: 0xf5f5f0, roughness: 0.60, metalness: 0.10 }),
+        underbody: new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.95, metalness: 0.04 }),
+    };
+    return _mats;
+}
+
+// Shared low-poly geometries — created once
+let _geoTire = null, _geoRim = null, _geoHub = null;
+let _geoHlLens = null, _geoHlHouse = null, _geoDRL = null;
+let _geoTlLens = null, _geoTlHouse = null, _geoTlStrip = null;
+function getSharedGeos(THREE) {
+    if (!_geoTire) {
+        _geoTire = new THREE.CylinderGeometry(0.40, 0.40, 0.30, 16); // 16 segs — smooth enough
+        _geoRim = new THREE.CylinderGeometry(0.32, 0.32, 0.07, 12);
+        _geoHub = new THREE.CylinderGeometry(0.08, 0.08, 0.09, 8);
+        _geoHlLens = new THREE.CylinderGeometry(0.14, 0.14, 0.06, 10);
+        _geoHlHouse = new THREE.CylinderGeometry(0.18, 0.18, 0.07, 10);
+        _geoDRL = new THREE.BoxGeometry(0.34, 0.045, 0.04);
+        _geoTlLens = new THREE.CylinderGeometry(0.13, 0.13, 0.06, 10);
+        _geoTlHouse = new THREE.CylinderGeometry(0.16, 0.16, 0.07, 10);
+        _geoTlStrip = new THREE.BoxGeometry(0.30, 0.04, 0.04);
+    }
+    return true;
+}
+
+function addWheel(group, THREE, x, z) {
+    getSharedGeos(THREE);
+    const m = getSharedMats(THREE);
+    const outX = x > 0 ? x + 0.12 : x - 0.12;
+
+    // Tire
+    const tire = new THREE.Mesh(_geoTire, m.tire);
     tire.rotation.z = Math.PI / 2;
-    tire.position.set(x, 0.28, z);
+    tire.position.set(x, 0.32, z);
     tire.castShadow = true;
     group.add(tire);
 
-    // Rim with spokes feel
-    const rim = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.22, 0.22, 0.24, 8),
-        chromeMat
-    );
+    // Alloy rim
+    const rim = new THREE.Mesh(_geoRim, m.rim);
     rim.rotation.z = Math.PI / 2;
-    rim.position.set(x > 0 ? x + 0.12 : x - 0.12, 0.28, z);
+    rim.position.set(outX, 0.32, z);
     group.add(rim);
 
     // Hub cap
-    const hub = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.07, 0.07, 0.26, 6),
-        chromeMat
-    );
+    const hub = new THREE.Mesh(_geoHub, m.hub);
     hub.rotation.z = Math.PI / 2;
-    hub.position.set(x > 0 ? x + 0.13 : x - 0.13, 0.28, z);
+    hub.position.set(outX, 0.32, z);
     group.add(hub);
 }
 
-function addHeadlights(group, THREE, zPos, color = 0xfffff0, emitColor = null) {
-    const mat = new THREE.MeshLambertMaterial({
-        color,
-        emissive: new THREE.Color(emitColor || color).multiplyScalar(0.9),
-    });
-    [-0.55, 0.55].forEach(x => {
-        const hl = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.14, 0.06), mat);
-        hl.position.set(x, 0.62, zPos);
-        group.add(hl);
+function addHeadlights(group, THREE, zPos) {
+    getSharedGeos(THREE);
+    const m = getSharedMats(THREE);
+    [-0.54, 0.54].forEach(x => {
+        const housing = new THREE.Mesh(_geoHlHouse, m.hlHouse);
+        housing.rotation.x = Math.PI / 2;
+        housing.position.set(x, 0.64, zPos + 0.01);
+        group.add(housing);
+
+        const lens = new THREE.Mesh(_geoHlLens, m.hlLens);
+        lens.rotation.x = Math.PI / 2;
+        lens.position.set(x, 0.64, zPos);
+        group.add(lens);
+
+        const drl = new THREE.Mesh(_geoDRL, m.drl);
+        drl.position.set(x, 0.49, zPos);
+        group.add(drl);
     });
 }
 
 function addTaillights(group, THREE, zPos) {
-    const mat = new THREE.MeshLambertMaterial({
-        color: 0xff1100,
-        emissive: new THREE.Color(0.7, 0.05, 0),
-    });
-    [-0.62, 0.62].forEach(x => {
-        const tl = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.12, 0.05), mat);
-        tl.position.set(x, 0.62, zPos);
-        group.add(tl);
+    getSharedGeos(THREE);
+    const m = getSharedMats(THREE);
+    [-0.60, 0.60].forEach(x => {
+        const housing = new THREE.Mesh(_geoTlHouse, m.tlHouse);
+        housing.rotation.x = Math.PI / 2;
+        housing.position.set(x, 0.64, zPos - 0.01);
+        group.add(housing);
+
+        const lens = new THREE.Mesh(_geoTlLens, m.tlLens);
+        lens.rotation.x = Math.PI / 2;
+        lens.position.set(x, 0.64, zPos);
+        group.add(lens);
+
+        const strip = new THREE.Mesh(_geoTlStrip, m.tlStrip);
+        strip.position.set(x, 0.51, zPos);
+        group.add(strip);
     });
 }
 
 // ── SEDAN ─────────────────────────────────────────────────────────────────────
 export function buildSedan(scene, THREE, color) {
     const group = new THREE.Group();
-    const body = new THREE.MeshLambertMaterial({ color });
-    const dark = new THREE.MeshLambertMaterial({ color: new THREE.Color(color).lerp(new THREE.Color(0, 0, 0), 0.45) });
-    const glass = new THREE.MeshLambertMaterial({ color: 0x334466, transparent: true, opacity: 0.72 });
-    const chr = new THREE.MeshLambertMaterial({ color: 0x999aaa });
-    const blk = new THREE.MeshLambertMaterial({ color: 0x111111 });
+    const body = new THREE.MeshStandardMaterial({ color, roughness: 0.25, metalness: 0.72 });
+    const dark = new THREE.MeshStandardMaterial({ color: new THREE.Color(color).lerp(new THREE.Color(0, 0, 0), 0.5), roughness: 0.35, metalness: 0.55 });
+    const { chr, blk, glass, plate } = getSharedMats(THREE);
 
-    // Body
-    addBox(group, THREE, 2.1, 0.52, 4.2, body, 0, 0.52, 0);
-    // Cabin (raised section)
-    addBox(group, THREE, 1.78, 0.48, 2.15, body, 0, 0.97, -0.08);
-    // Roof
-    addBox(group, THREE, 1.72, 0.09, 2.0, dark, 0, 1.22, -0.08);
-    // Hood slope
-    addBox(group, THREE, 1.96, 0.18, 1.0, body, 0, 0.72, -1.65, 0.22, 0, 0);
+    // Main body — slightly wider, rounded-feel proportions
+    addBox(group, THREE, 2.12, 0.55, 4.25, body, 0, 0.54, 0);
+    // Cabin — wider greenhouse, taller for comfort feel
+    addBox(group, THREE, 1.84, 0.52, 2.2, body, 0, 1.0, -0.06);
+    // Roof (dark gloss contrast panel)
+    addBox(group, THREE, 1.78, 0.08, 2.05, dark, 0, 1.27, -0.06);
+    // Hood — smooth slope with slight wedge
+    addBox(group, THREE, 2.0, 0.16, 1.05, body, 0, 0.74, -1.66, 0.20, 0, 0);
+    // Secondary hood taper (double-slope for smoothness)
+    addBox(group, THREE, 1.96, 0.10, 0.55, dark, 0, 0.66, -2.12, 0.32, 0, 0);
     // Boot slope
-    addBox(group, THREE, 1.94, 0.16, 0.7, body, 0, 0.72, 1.72, -0.18, 0, 0);
-    // Front bumper
-    addBox(group, THREE, 2.08, 0.22, 0.17, dark, 0, 0.30, -2.13);
+    addBox(group, THREE, 1.96, 0.15, 0.75, body, 0, 0.74, 1.73, -0.17, 0, 0);
+    // Boot taper
+    addBox(group, THREE, 1.92, 0.10, 0.4, dark, 0, 0.66, 2.10, -0.28, 0, 0);
+    // Front bumper — integrated smooth look
+    addBox(group, THREE, 2.1, 0.20, 0.20, dark, 0, 0.28, -2.14);
+    addBox(group, THREE, 1.8, 0.07, 0.16, chr, 0, 0.19, -2.14); // chrome lower lip
     // Rear bumper
-    addBox(group, THREE, 2.08, 0.22, 0.17, dark, 0, 0.30, 2.13);
-    // Skirts
-    [-1.07, 1.07].forEach(x => addBox(group, THREE, 0.07, 0.1, 3.8, dark, x, 0.17, 0));
+    addBox(group, THREE, 2.1, 0.20, 0.20, dark, 0, 0.28, 2.14);
+    addBox(group, THREE, 1.8, 0.07, 0.16, chr, 0, 0.19, 2.14);
+    // Side sills (rocker panels)
+    [-1.08, 1.08].forEach(x => {
+        addBox(group, THREE, 0.08, 0.09, 3.9, dark, x, 0.16, 0);
+        addBox(group, THREE, 0.06, 0.04, 3.85, chr, x, 0.10, 0); // chrome trim strip
+    });
+    // Shoulder crease line (thin raised strip for modern sculpt feel)
+    [-1.06, 1.06].forEach(x => addBox(group, THREE, 0.04, 0.04, 3.6, chr, x, 0.70, 0));
+    // Hood vent accent
+    addBox(group, THREE, 1.4, 0.03, 0.10, chr, 0, 0.77, -1.85);
 
-    // Windscreen
-    addBox(group, THREE, 1.68, 0.46, 0.07, glass, 0, 0.98, -1.22, -0.28, 0, 0);
+    // Windscreen — more raked
+    addBox(group, THREE, 1.74, 0.50, 0.07, glass, 0, 1.0, -1.22, -0.30, 0, 0);
     // Rear screen
-    addBox(group, THREE, 1.66, 0.38, 0.07, glass, 0, 0.97, 1.0, 0.28, 0, 0);
+    addBox(group, THREE, 1.72, 0.42, 0.07, glass, 0, 0.99, 1.02, 0.28, 0, 0);
     // Side windows
-    [-0.9, 0.9].forEach(x => addBox(group, THREE, 0.06, 0.35, 1.78, glass, x, 0.97, -0.08));
+    [-0.93, 0.93].forEach(x => addBox(group, THREE, 0.06, 0.38, 1.82, glass, x, 1.0, -0.06));
+    // Quarter window (rear triangular accent)
+    [-0.93, 0.93].forEach(x => addBox(group, THREE, 0.06, 0.24, 0.40, glass, x, 0.96, 0.98));
 
     // Wheels
-    [[1.1, -1.4], [-1.1, -1.4], [1.1, 1.3], [-1.1, 1.3]].forEach(([x, z]) =>
+    [[1.12, -1.44], [-1.12, -1.44], [1.12, 1.34], [-1.12, 1.34]].forEach(([x, z]) =>
         addWheel(group, THREE, x, z, blk, chr)
     );
 
     // Lights
-    addHeadlights(group, THREE, -2.14);
-    addTaillights(group, THREE, 2.14);
+    addHeadlights(group, THREE, -2.16);
+    addTaillights(group, THREE, 2.16);
 
     // Headlight spot
-    const spot = new THREE.SpotLight(0xffffff, 2.2, 42, Math.PI / 7, 0.7);
-    spot.position.set(0, 0.78, -2.1);
-    spot.target.position.set(0, 0, -22);
+    const spot = new THREE.SpotLight(0xfff4e0, 2.8, 48, Math.PI / 7, 0.65);
+    spot.position.set(0, 0.80, -2.12);
+    spot.target.position.set(0, 0, -24);
     group.add(spot);
     group.add(spot.target);
 
     // Licence plate
-    addBox(group, THREE, 1.1, 0.26, 0.05, new THREE.MeshLambertMaterial({ color: 0xf5f5f0 }), 0, 0.36, -2.16);
+    addBox(group, THREE, 1.1, 0.26, 0.05, plate, 0, 0.34, -2.18);
+
+    // Door handles (chrome)
+    [-0.92, 0.92].forEach(x => {
+        addBox(group, THREE, 0.04, 0.045, 0.22, chr, x, 0.80, -0.35);
+        addBox(group, THREE, 0.04, 0.045, 0.22, chr, x, 0.80, 0.55);
+    });
+
+    // Exhaust tips
+    [-0.30, 0.30].forEach(x => addCyl(group, THREE, 0.055, 0.055, 0.08, 10, chr, x, 0.22, 2.17, Math.PI / 2, 0, 0));
 
     scene.add(group);
     return group;
@@ -140,47 +219,69 @@ export function buildSedan(scene, THREE, color) {
 // ── SUV ───────────────────────────────────────────────────────────────────────
 export function buildSUV(scene, THREE, color) {
     const group = new THREE.Group();
-    const body = new THREE.MeshLambertMaterial({ color });
-    const dark = new THREE.MeshLambertMaterial({ color: new THREE.Color(color).lerp(new THREE.Color(0, 0, 0), 0.4) });
-    const glass = new THREE.MeshLambertMaterial({ color: 0x223355, transparent: true, opacity: 0.7 });
-    const chr = new THREE.MeshLambertMaterial({ color: 0x888899 });
-    const blk = new THREE.MeshLambertMaterial({ color: 0x111111 });
+    const body = new THREE.MeshStandardMaterial({ color, roughness: 0.28, metalness: 0.65 });
+    const dark = new THREE.MeshStandardMaterial({ color: new THREE.Color(color).lerp(new THREE.Color(0, 0, 0), 0.45), roughness: 0.40, metalness: 0.50 });
+    const { chr, blk, glass, underbody } = getSharedMats(THREE);
 
-    // Tall blocky body
-    addBox(group, THREE, 2.3, 0.62, 4.6, body, 0, 0.55, 0);
-    // Cabin — same width, nearly full length
-    addBox(group, THREE, 2.22, 0.68, 2.9, body, 0, 1.11, 0.12);
-    // Roof rack detail
-    addBox(group, THREE, 2.0, 0.06, 2.6, dark, 0, 1.49, 0.12);
-    // Roof rack bars
-    [-0.7, 0, 0.7].forEach(z =>
-        addBox(group, THREE, 2.0, 0.06, 0.06, chr, 0, 1.54, z)
+    // Tall, muscular body
+    addBox(group, THREE, 2.32, 0.65, 4.65, body, 0, 0.57, 0);
+    // Cabin — squared-off greenhouse, full width
+    addBox(group, THREE, 2.26, 0.72, 2.96, body, 0, 1.14, 0.14);
+    // Roof panel
+    addBox(group, THREE, 2.18, 0.07, 2.78, dark, 0, 1.54, 0.14);
+    // Roof rack (satin black)
+    addBox(group, THREE, 2.04, 0.055, 2.55, blk, 0, 1.60, 0.14);
+    // Roof rack cross bars
+    [-0.75, 0, 0.72].forEach(z =>
+        addBox(group, THREE, 2.0, 0.055, 0.07, chr, 0, 1.64, z + 0.14)
     );
-    // Front bumper guard
-    addBox(group, THREE, 2.3, 0.28, 0.22, dark, 0, 0.35, -2.35);
-    addBox(group, THREE, 2.3, 0.12, 0.18, chr, 0, 0.55, -2.35);
+    // Front fascia — dual-layer bumper
+    addBox(group, THREE, 2.34, 0.32, 0.24, dark, 0, 0.33, -2.38);
+    addBox(group, THREE, 2.32, 0.10, 0.20, chr, 0, 0.52, -2.38); // chrome skid guard
+    // Lower skid plate
+    addBox(group, THREE, 2.0, 0.14, 0.28, underbody, 0, 0.16, -2.36);
     // Rear bumper
-    addBox(group, THREE, 2.3, 0.28, 0.2, dark, 0, 0.35, 2.35);
-    // Side cladding
-    [-1.16, 1.16].forEach(x => {
-        addBox(group, THREE, 0.07, 0.22, 4.5, dark, x, 0.3, 0);
-        addBox(group, THREE, 0.06, 0.1, 4.5, chr, x, 0.5, 0);
+    addBox(group, THREE, 2.34, 0.30, 0.22, dark, 0, 0.33, 2.38);
+    addBox(group, THREE, 1.6, 0.09, 0.18, chr, 0, 0.18, 2.38);
+    // Side cladding (body-colour lower, dark matte upper strip)
+    [-1.18, 1.18].forEach(x => {
+        addBox(group, THREE, 0.08, 0.26, 4.6, dark, x, 0.28, 0);  // cladding
+        addBox(group, THREE, 0.06, 0.07, 4.6, chr, x, 0.48, 0);   // chrome strip
     });
+    // Body crease (character line)
+    [-1.16, 1.16].forEach(x => addBox(group, THREE, 0.04, 0.04, 4.0, chr, x, 0.82, 0));
+    // Hood — slight raised centre power bulge
+    addBox(group, THREE, 0.65, 0.055, 2.0, dark, 0, 0.92, -0.7); // centre power bulge
+    // Front wheel arch flares
+    [-1.18, 1.18].forEach(x => addBox(group, THREE, 0.12, 0.18, 1.15, dark, x, 0.48, -1.60));
+    // Rear wheel arch flares
+    [-1.18, 1.18].forEach(x => addBox(group, THREE, 0.12, 0.18, 1.15, dark, x, 0.48, 1.50));
 
-    // Windscreen
-    addBox(group, THREE, 2.1, 0.6, 0.07, glass, 0, 1.1, -1.52, -0.22, 0, 0);
+    // Windscreen — slightly raked
+    addBox(group, THREE, 2.16, 0.64, 0.07, glass, 0, 1.14, -1.54, -0.20, 0, 0);
     // Rear screen
-    addBox(group, THREE, 2.1, 0.6, 0.07, glass, 0, 1.1, 1.52, 0.22, 0, 0);
+    addBox(group, THREE, 2.16, 0.62, 0.07, glass, 0, 1.14, 1.54, 0.20, 0, 0);
     // Side windows
-    [-1.12, 1.12].forEach(x => addBox(group, THREE, 0.06, 0.5, 2.7, glass, x, 1.12, 0.12));
+    [-1.14, 1.14].forEach(x => addBox(group, THREE, 0.06, 0.54, 2.74, glass, x, 1.16, 0.14));
+    // Rear quarter windows
+    [-1.14, 1.14].forEach(x => addBox(group, THREE, 0.06, 0.38, 0.55, glass, x, 1.1, 1.75));
 
-    // Big SUV wheels
-    [[1.18, -1.55], [-1.18, -1.55], [1.18, 1.45], [-1.18, 1.45]].forEach(([x, z]) =>
+    // Big SUV wheels (slightly larger)
+    [[1.20, -1.58], [-1.20, -1.58], [1.20, 1.48], [-1.20, 1.48]].forEach(([x, z]) =>
         addWheel(group, THREE, x, z, blk, chr)
     );
 
-    addHeadlights(group, THREE, -2.4);
-    addTaillights(group, THREE, 2.4);
+    addHeadlights(group, THREE, -2.42);
+    addTaillights(group, THREE, 2.42);
+
+    // Rear exhaust pipes
+    [-0.38, 0.38].forEach(x => addCyl(group, THREE, 0.065, 0.065, 0.10, 10, chr, x, 0.26, 2.42, Math.PI / 2, 0, 0));
+
+    // Mirror housings
+    [-1.18, 1.18].forEach(x => {
+        addBox(group, THREE, 0.32, 0.04, 0.04, chr, x + (x > 0 ? 0.14 : -0.14), 1.42, -1.92, 0, 0, Math.PI / 2);
+        addBox(group, THREE, 0.20, 0.26, 0.10, dark, x + (x > 0 ? 0.30 : -0.30), 1.30, -1.92);
+    });
 
     scene.add(group);
     return group;
@@ -189,45 +290,59 @@ export function buildSUV(scene, THREE, color) {
 // ── SPORTS CAR ────────────────────────────────────────────────────────────────
 export function buildSportsCar(scene, THREE, color) {
     const group = new THREE.Group();
-    const body = new THREE.MeshLambertMaterial({ color });
-    const dark = new THREE.MeshLambertMaterial({ color: new THREE.Color(color).lerp(new THREE.Color(0, 0, 0), 0.5) });
-    const glass = new THREE.MeshLambertMaterial({ color: 0x445577, transparent: true, opacity: 0.65 });
-    const chr = new THREE.MeshLambertMaterial({ color: 0xaaaacc });
-    const blk = new THREE.MeshLambertMaterial({ color: 0x111111 });
+    const body = new THREE.MeshStandardMaterial({ color, roughness: 0.18, metalness: 0.80 });
+    const dark = new THREE.MeshStandardMaterial({ color: new THREE.Color(color).lerp(new THREE.Color(0, 0, 0), 0.55), roughness: 0.30, metalness: 0.60 });
+    const { chr, blk, glass } = getSharedMats(THREE);
 
-    // Very low, wide body
-    addBox(group, THREE, 2.2, 0.38, 4.4, body, 0, 0.38, 0);
-    // Low-slung cabin
-    addBox(group, THREE, 1.82, 0.38, 1.75, body, 0, 0.7, -0.15);
-    // Flat roof
-    addBox(group, THREE, 1.76, 0.07, 1.6, dark, 0, 0.9, -0.15);
-    // Long hood
-    addBox(group, THREE, 2.1, 0.12, 1.5, body, 0, 0.5, -1.7, 0.1, 0, 0);
-    // Air intake vents
-    [-0.6, 0.6].forEach(x => addBox(group, THREE, 0.28, 0.07, 0.4, blk, x, 0.42, -1.9));
-    // Rear diffuser
-    addBox(group, THREE, 2.18, 0.14, 0.3, dark, 0, 0.24, 2.2);
-    // Rear spoiler
-    addBox(group, THREE, 1.9, 0.1, 0.36, dark, 0, 0.64, 2.1);
-    addCyl(group, THREE, 0.05, 0.05, 0.32, 6, chr, -0.85, 0.54, 2.1, 0, 0, Math.PI / 2);
-    addCyl(group, THREE, 0.05, 0.05, 0.32, 6, chr, 0.85, 0.54, 2.1, 0, 0, Math.PI / 2);
-    // Side skirts
-    [-1.12, 1.12].forEach(x => addBox(group, THREE, 0.06, 0.09, 4.3, dark, x, 0.13, 0));
-    // Exhaust pipes
-    [-0.45, 0.45].forEach(x => addCyl(group, THREE, 0.07, 0.07, 0.18, 8, chr, x, 0.24, 2.24, Math.PI / 2, 0, 0));
+    // Very low, wide body with double-layer for depth
+    addBox(group, THREE, 2.22, 0.40, 4.45, body, 0, 0.38, 0);
+    // Low-slung cabin with raked greenhouse
+    addBox(group, THREE, 1.86, 0.40, 1.80, body, 0, 0.72, -0.12);
+    // Fastback roof — dark contrast
+    addBox(group, THREE, 1.80, 0.06, 1.65, dark, 0, 0.93, -0.12);
+    // Long hood with power bulge
+    addBox(group, THREE, 2.12, 0.13, 1.55, body, 0, 0.52, -1.72, 0.09, 0, 0);
+    addBox(group, THREE, 0.58, 0.06, 1.40, dark, 0, 0.54, -1.68); // power bulge
+    // Hood tip taper
+    addBox(group, THREE, 2.08, 0.10, 0.40, dark, 0, 0.44, -2.18, 0.22, 0, 0);
+    // Air intake vents (wider, more aggressive)
+    [-0.62, 0.62].forEach(x => {
+        addBox(group, THREE, 0.32, 0.09, 0.45, blk, x, 0.41, -1.92);
+        addCyl(group, THREE, 0.055, 0.055, 0.30, 8, chr, x, 0.37, -1.94, Math.PI / 2, 0, 0); // vent grille bar
+    });
+    // Rear diffuser (aggressive angled)
+    addBox(group, THREE, 2.20, 0.16, 0.35, dark, 0, 0.22, 2.22, 0.30, 0, 0);
+    // Rear spoiler blade
+    addBox(group, THREE, 1.94, 0.09, 0.42, dark, 0, 0.68, 2.12);
+    // Spoiler end plates
+    [-0.95, 0.95].forEach(x => addBox(group, THREE, 0.06, 0.18, 0.40, dark, x, 0.65, 2.12));
+    // Spoiler mounts
+    addCyl(group, THREE, 0.05, 0.05, 0.34, 6, chr, -0.86, 0.54, 2.12, 0, 0, Math.PI / 2);
+    addCyl(group, THREE, 0.05, 0.05, 0.34, 6, chr, 0.86, 0.54, 2.12, 0, 0, Math.PI / 2);
+    // Side skirts (flush, low)
+    [-1.13, 1.13].forEach(x => {
+        addBox(group, THREE, 0.07, 0.10, 4.35, dark, x, 0.12, 0);
+        addBox(group, THREE, 0.05, 0.04, 4.3, chr, x, 0.07, 0); // chrome underline
+    });
+    // Exhaust pipes (quad)
+    [-0.5, -0.22, 0.22, 0.5].forEach(x => addCyl(group, THREE, 0.058, 0.058, 0.12, 10, chr, x, 0.22, 2.26, Math.PI / 2, 0, 0));
+    // Front splitter
+    addBox(group, THREE, 2.18, 0.05, 0.28, blk, 0, 0.12, -2.18);
 
-    // Windscreen (very slanted)
-    addBox(group, THREE, 1.78, 0.42, 0.07, glass, 0, 0.78, -1.1, -0.48, 0, 0);
-    // Side windows (small)
-    [-0.92, 0.92].forEach(x => addBox(group, THREE, 0.05, 0.3, 1.6, glass, x, 0.72, -0.2));
+    // Windscreen (very slanted, raked)
+    addBox(group, THREE, 1.82, 0.44, 0.07, glass, 0, 0.80, -1.08, -0.50, 0, 0);
+    // Rear fastback screen
+    addBox(group, THREE, 1.80, 0.36, 0.07, glass, 0, 0.76, 0.90, 0.40, 0, 0);
+    // Side windows (slim, sporty)
+    [-0.94, 0.94].forEach(x => addBox(group, THREE, 0.05, 0.32, 1.62, glass, x, 0.74, -0.18));
 
-    // Low-profile wheels
-    [[1.12, -1.45], [-1.12, -1.45], [1.12, 1.35], [-1.12, 1.35]].forEach(([x, z]) =>
+    // Low-profile wide wheels
+    [[1.14, -1.46], [-1.14, -1.46], [1.14, 1.36], [-1.14, 1.36]].forEach(([x, z]) =>
         addWheel(group, THREE, x, z, blk, chr)
     );
 
-    addHeadlights(group, THREE, -2.22);
-    addTaillights(group, THREE, 2.22);
+    addHeadlights(group, THREE, -2.24);
+    addTaillights(group, THREE, 2.24);
 
     scene.add(group);
     return group;
@@ -236,72 +351,80 @@ export function buildSportsCar(scene, THREE, color) {
 // ── BUS ───────────────────────────────────────────────────────────────────────
 export function buildBus(scene, THREE, color) {
     const group = new THREE.Group();
-    const body = new THREE.MeshLambertMaterial({ color });
-    const dark = new THREE.MeshLambertMaterial({ color: new THREE.Color(color).lerp(new THREE.Color(0, 0, 0), 0.35) });
-    const glass = new THREE.MeshLambertMaterial({ color: 0x334455, transparent: true, opacity: 0.65 });
-    const chr = new THREE.MeshLambertMaterial({ color: 0x888899 });
-    const blk = new THREE.MeshLambertMaterial({ color: 0x111111 });
-    const white = new THREE.MeshLambertMaterial({ color: 0xeeeeee });
+    const body = new THREE.MeshStandardMaterial({ color, roughness: 0.32, metalness: 0.55 });
+    const dark = new THREE.MeshStandardMaterial({ color: new THREE.Color(color).lerp(new THREE.Color(0, 0, 0), 0.40), roughness: 0.42, metalness: 0.45 });
+    const white = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.50, metalness: 0.08 });
+    const { chr, blk, glass } = getSharedMats(THREE);
 
-    // Main chassis — long and tall
-    addBox(group, THREE, 2.6, 1.55, 8.8, body, 0, 1.05, 0);
-    // Roof — slight curve simulation with a flat dark strip
-    addBox(group, THREE, 2.55, 0.1, 8.7, dark, 0, 1.85, 0);
-    // Front face
-    addBox(group, THREE, 2.6, 1.55, 0.12, dark, 0, 1.05, -4.46);
+    // Main chassis — long and tall with slight taper
+    addBox(group, THREE, 2.62, 1.58, 8.85, body, 0, 1.06, 0);
+    // Roof — with slight overhang detail
+    addBox(group, THREE, 2.58, 0.09, 8.75, dark, 0, 1.88, 0);
+    // Roof AC unit
+    addBox(group, THREE, 1.2, 0.20, 1.4, blk, 0, 2.0, 0.5);
+    addBox(group, THREE, 1.1, 0.08, 1.3, chr, 0, 2.02, 0.5); // AC grille
+    // Front face — rounded impression
+    addBox(group, THREE, 2.62, 1.58, 0.14, dark, 0, 1.06, -4.48);
     // Rear face
-    addBox(group, THREE, 2.6, 1.55, 0.12, dark, 0, 1.05, 4.46);
-    // Front bumper
-    addBox(group, THREE, 2.62, 0.26, 0.22, chr, 0, 0.28, -4.52);
+    addBox(group, THREE, 2.62, 1.58, 0.14, dark, 0, 1.06, 4.48);
+    // Front bumper (integrated lower)
+    addBox(group, THREE, 2.64, 0.28, 0.24, chr, 0, 0.26, -4.54);
     // Rear bumper
-    addBox(group, THREE, 2.62, 0.26, 0.22, chr, 0, 0.28, 4.52);
-    // Side stripe (white band along body)
-    addBox(group, THREE, 2.62, 0.22, 8.7, white, 0, 1.52, 0);
-    // Wheel arches
-    [[1.32, -3.1], [-1.32, -3.1], [1.32, 2.8], [-1.32, 2.8]].forEach(([x, z]) =>
-        addBox(group, THREE, 0.12, 0.52, 1.1, dark, x, 0.42, z)
+    addBox(group, THREE, 2.64, 0.28, 0.24, chr, 0, 0.26, 4.54);
+    // Side stripe (bright accent band)
+    addBox(group, THREE, 2.64, 0.24, 8.75, white, 0, 1.54, 0);
+    // Lower dark skirt
+    [-1.33, 1.33].forEach(x => {
+        addBox(group, THREE, 0.08, 0.30, 8.8, dark, x, 0.30, 0);
+        addBox(group, THREE, 0.06, 0.06, 8.75, chr, x, 0.48, 0); // chrome strip
+    });
+    // Wheel arch covers
+    [[1.33, -3.1], [-1.33, -3.1], [1.33, 2.8], [-1.33, 2.8]].forEach(([x, z]) =>
+        addBox(group, THREE, 0.14, 0.54, 1.15, dark, x, 0.40, z)
     );
 
-    // Windows — many along both sides
+    // Windows — many along both sides with chrome frames
     const winY = 1.28;
     for (let i = 0; i < 5; i++) {
         const wz = -3.0 + i * 1.35;
-        [-1.31, 1.31].forEach(x => {
-            const win = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.55, 0.96), glass);
+        [-1.32, 1.32].forEach(x => {
+            const win = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.56, 0.98), glass);
             win.position.set(x, winY, wz);
             group.add(win);
+            // Chrome window frame
+            const frame = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.62, 1.04), chr);
+            frame.position.set(x, winY, wz);
+            group.add(frame);
+            win.position.x += x > 0 ? 0.01 : -0.01; // push glass forward of frame
         });
     }
     // Front windscreen
-    addBox(group, THREE, 2.3, 0.8, 0.07, glass, 0, 1.38, -4.48, -0.1, 0, 0);
+    addBox(group, THREE, 2.32, 0.82, 0.07, glass, 0, 1.40, -4.50, -0.09, 0, 0);
     // Rear window
-    addBox(group, THREE, 2.3, 0.6, 0.07, glass, 0, 1.38, 4.48, 0.1, 0, 0);
+    addBox(group, THREE, 2.32, 0.62, 0.07, glass, 0, 1.40, 4.50, 0.09, 0, 0);
 
     // Door (right side)
-    addBox(group, THREE, 0.07, 1.1, 1.0, dark, -1.31, 0.82, -1.6);
-    addBox(group, THREE, 0.05, 0.06, 0.8, chr, -1.34, 1.35, -1.6); // door handle
+    addBox(group, THREE, 0.08, 1.12, 1.04, dark, -1.32, 0.82, -1.6);
+    addBox(group, THREE, 0.06, 0.06, 0.82, chr, -1.35, 1.36, -1.6); // door handle
 
     // Destination display box above windscreen
-    addBox(group, THREE, 2.2, 0.28, 0.09, blk, 0, 1.75, -4.47);
-    const destMat = new THREE.MeshLambertMaterial({ color: 0xff8800, emissive: new THREE.Color(0.4, 0.18, 0) });
-    addBox(group, THREE, 2.0, 0.18, 0.06, destMat, 0, 1.75, -4.5);
+    addBox(group, THREE, 2.24, 0.30, 0.10, blk, 0, 1.77, -4.49);
+    const destMat = new THREE.MeshStandardMaterial({ color: 0xff8800, emissive: new THREE.Color(0.5, 0.22, 0), emissiveIntensity: 1.2, roughness: 0.1 });
+    addBox(group, THREE, 2.04, 0.20, 0.07, destMat, 0, 1.77, -4.52);
 
-    // Headlights — twin rectangular
-    [[0.7, -4.52], [-0.7, -4.52]].forEach(([x, z]) => {
-        const hl = new THREE.Mesh(
-            new THREE.BoxGeometry(0.55, 0.22, 0.06),
-            new THREE.MeshLambertMaterial({ color: 0xfffff0, emissive: new THREE.Color(0.9, 0.9, 0.7) })
-        );
-        hl.position.set(x, 0.62, z);
+    // Headlights — twin round LED
+    getSharedGeos(THREE);
+    [[0.72, -4.54], [-0.72, -4.54]].forEach(([x, z]) => {
+        const hl = new THREE.Mesh(_geoHlLens, getSharedMats(THREE).hlLens);
+        hl.rotation.x = Math.PI / 2;
+        hl.position.set(x, 0.64, z);
         group.add(hl);
     });
     // Tail lights
-    [[0.8, 4.52], [-0.8, 4.52]].forEach(([x, z]) => {
-        const tl = new THREE.Mesh(
-            new THREE.BoxGeometry(0.55, 0.3, 0.06),
-            new THREE.MeshLambertMaterial({ color: 0xff1100, emissive: new THREE.Color(0.6, 0.05, 0) })
-        );
-        tl.position.set(x, 0.62, z);
+    [[0.82, 4.54], [-0.82, 4.54]].forEach(([x, z]) => {
+        const tl = new THREE.Mesh(_geoTlLens, getSharedMats(THREE).tlLens);
+        tl.rotation.x = Math.PI / 2;
+        tl.position.set(x, 0.64, z);
         group.add(tl);
     });
 
@@ -311,9 +434,9 @@ export function buildBus(scene, THREE, color) {
     );
 
     // Mirror arms
-    [-1.35, 1.35].forEach(x => {
-        addBox(group, THREE, 0.35, 0.04, 0.04, chr, x + (x > 0 ? 0.16 : -0.16), 1.7, -3.8, 0, 0, Math.PI / 2);
-        addBox(group, THREE, 0.22, 0.26, 0.07, dark, x + (x > 0 ? 0.34 : -0.34), 1.62, -3.8);
+    [-1.36, 1.36].forEach(x => {
+        addBox(group, THREE, 0.36, 0.05, 0.05, chr, x + (x > 0 ? 0.17 : -0.17), 1.72, -3.82, 0, 0, Math.PI / 2);
+        addBox(group, THREE, 0.24, 0.28, 0.09, dark, x + (x > 0 ? 0.35 : -0.35), 1.62, -3.82);
     });
 
     scene.add(group);
@@ -323,12 +446,10 @@ export function buildBus(scene, THREE, color) {
 // ── SCHOOL BUS ────────────────────────────────────────────────────────────────
 export function buildSchoolBus(scene, THREE) {
     const group = new THREE.Group();
-    const yellow = new THREE.MeshLambertMaterial({ color: 0xffd700 });
-    const dark = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
-    const black = new THREE.MeshLambertMaterial({ color: 0x111111 });
-    const glass = new THREE.MeshLambertMaterial({ color: 0x334455, transparent: true, opacity: 0.65 });
-    const chr = new THREE.MeshLambertMaterial({ color: 0x888899 });
-    const red = new THREE.MeshLambertMaterial({ color: 0xcc0000 });
+    const yellow = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.28, metalness: 0.45 });
+    const dark = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.55, metalness: 0.30 });
+    const red = new THREE.MeshStandardMaterial({ color: 0xcc0000, roughness: 0.30, metalness: 0.40 });
+    const { chr, blk: black, glass } = getSharedMats(THREE);
 
     // Body
     addBox(group, THREE, 2.55, 1.5, 8.2, yellow, 0, 1.02, 0);
@@ -361,27 +482,26 @@ export function buildSchoolBus(scene, THREE) {
 
     // SCHOOL BUS text area (black strip front)
     addBox(group, THREE, 2.3, 0.28, 0.08, black, 0, 1.7, -5.36);
-    const textMat = new THREE.MeshLambertMaterial({ color: 0xff4400, emissive: new THREE.Color(0.3, 0.1, 0) });
+    const textMat = new THREE.MeshStandardMaterial({ color: 0xff4400, emissive: new THREE.Color(0.35, 0.12, 0), emissiveIntensity: 1.0, roughness: 0.15 });
     addBox(group, THREE, 2.0, 0.18, 0.06, textMat, 0, 1.7, -5.38);
 
     // Stop sign arm (right side, retracted)
     addBox(group, THREE, 0.06, 0.55, 0.55, red, 1.3, 1.2, -1.0);
 
-    // Headlights
-    [[0.6, -5.38], [-0.6, -5.38]].forEach(([x, z]) => {
-        const hl = new THREE.Mesh(
-            new THREE.BoxGeometry(0.52, 0.2, 0.06),
-            new THREE.MeshLambertMaterial({ color: 0xfffff0, emissive: new THREE.Color(0.85, 0.85, 0.6) })
-        );
-        hl.position.set(x, 0.58, z);
+    // Headlights — round LED
+    getSharedGeos(THREE);
+    [[0.6, -5.40], [-0.6, -5.40]].forEach(([x, z]) => {
+        const hl = new THREE.Mesh(_geoHlLens, getSharedMats(THREE).hlLens);
+        hl.rotation.x = Math.PI / 2;
+        hl.position.set(x, 0.60, z);
         group.add(hl);
     });
     addTaillights(group, THREE, 4.5);
 
-    // Warning lights on roof
+    // Warning lights on roof (rounded pill shape)
     [-0.5, 0.5].forEach(x => {
-        const warnMat = new THREE.MeshLambertMaterial({ color: 0xff2200, emissive: new THREE.Color(0.5, 0, 0) });
-        addBox(group, THREE, 0.22, 0.18, 0.22, warnMat, x, 1.92, -4.2);
+        const warnMat = new THREE.MeshStandardMaterial({ color: 0xff2200, emissive: new THREE.Color(0.6, 0, 0), emissiveIntensity: 1.1, roughness: 0.12 });
+        addCyl(group, THREE, 0.12, 0.12, 0.22, 10, warnMat, x, 1.94, -4.2, 0, 0, Math.PI / 2);
     });
 
     // Wheels (6)
@@ -396,12 +516,10 @@ export function buildSchoolBus(scene, THREE) {
 // ── AMBULANCE ─────────────────────────────────────────────────────────────────
 export function buildAmbulance(scene, THREE) {
     const group = new THREE.Group();
-    const white = new THREE.MeshLambertMaterial({ color: 0xf0f0f0 });
-    const dark = new THREE.MeshLambertMaterial({ color: 0x1a1a2a });
-    const glass = new THREE.MeshLambertMaterial({ color: 0x334455, transparent: true, opacity: 0.65 });
-    const chr = new THREE.MeshLambertMaterial({ color: 0x888899 });
-    const blk = new THREE.MeshLambertMaterial({ color: 0x111111 });
-    const lime = new THREE.MeshLambertMaterial({ color: 0xaadd00 });
+    const white = new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.22, metalness: 0.35 });
+    const dark = new THREE.MeshStandardMaterial({ color: 0x1a1a2a, roughness: 0.55, metalness: 0.25 });
+    const lime = new THREE.MeshStandardMaterial({ color: 0xaadd00, roughness: 0.32, metalness: 0.12, emissive: new THREE.Color(0.15, 0.28, 0), emissiveIntensity: 0.4 });
+    const { chr, blk, glass } = getSharedMats(THREE);
 
     // Body — boxy van shape
     addBox(group, THREE, 2.45, 1.68, 5.8, white, 0, 1.08, 0);
@@ -419,13 +537,13 @@ export function buildAmbulance(scene, THREE) {
     addBox(group, THREE, 2.47, 0.22, 5.82, lime, 0, 1.28, 0);
 
     // Red stripe
-    const redMat = new THREE.MeshLambertMaterial({ color: 0xcc0000 });
+    const redMat = new THREE.MeshStandardMaterial({ color: 0xcc0000, roughness: 0.32, metalness: 0.20 });
     addBox(group, THREE, 2.47, 0.12, 5.82, redMat, 0, 0.88, 0);
 
     // Cross symbol on rear
-    const crossMat = new THREE.MeshLambertMaterial({ color: 0xdd0000, emissive: new THREE.Color(0.3, 0, 0) });
-    addBox(group, THREE, 0.55, 0.14, 0.06, crossMat, 0, 1.1, 3.0);
-    addBox(group, THREE, 0.14, 0.55, 0.06, crossMat, 0, 1.1, 3.0);
+    const crossMat = new THREE.MeshStandardMaterial({ color: 0xdd0000, emissive: new THREE.Color(0.4, 0, 0), emissiveIntensity: 0.9, roughness: 0.15 });
+    addBox(group, THREE, 0.58, 0.15, 0.07, crossMat, 0, 1.1, 3.0);
+    addBox(group, THREE, 0.15, 0.58, 0.07, crossMat, 0, 1.1, 3.0);
 
     // Windows
     addBox(group, THREE, 2.1, 0.6, 0.07, glass, 0, 1.35, -2.95, -0.12, 0, 0);
@@ -439,9 +557,12 @@ export function buildAmbulance(scene, THREE) {
     // Red + Blue alternating light pods
     const podColors = [0xff0000, 0x0044ff, 0xff0000, 0x0044ff, 0xff0000, 0x0044ff];
     podColors.forEach((col, i) => {
-        const podMat = new THREE.MeshLambertMaterial({
+        const podMat = new THREE.MeshStandardMaterial({
             color: col,
             emissive: new THREE.Color(col).multiplyScalar(0.7),
+            emissiveIntensity: 0.9,
+            roughness: 0.10,
+            metalness: 0.05,
         });
         const pod = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.16, 0.5), podMat);
         pod.position.set(-0.7 + i * 0.28, 2.11, -1.0);
@@ -485,11 +606,9 @@ export function buildAmbulance(scene, THREE) {
 // ── TAXI ──────────────────────────────────────────────────────────────────────
 export function buildTaxi(scene, THREE) {
     const group = new THREE.Group();
-    const yellow = new THREE.MeshLambertMaterial({ color: 0xffc107 });
-    const dark = new THREE.MeshLambertMaterial({ color: 0x111122 });
-    const glass = new THREE.MeshLambertMaterial({ color: 0x334466, transparent: true, opacity: 0.7 });
-    const chr = new THREE.MeshLambertMaterial({ color: 0x999aaa });
-    const blk = new THREE.MeshLambertMaterial({ color: 0x111111 });
+    const yellow = new THREE.MeshStandardMaterial({ color: 0xffc107, roughness: 0.22, metalness: 0.55 });
+    const dark = new THREE.MeshStandardMaterial({ color: 0x111122, roughness: 0.50, metalness: 0.30 });
+    const { chr, blk, glass } = getSharedMats(THREE);
 
     // Sedan base
     addBox(group, THREE, 2.08, 0.5, 4.15, yellow, 0, 0.5, 0);
@@ -500,17 +619,19 @@ export function buildTaxi(scene, THREE) {
     addBox(group, THREE, 2.05, 0.2, 0.16, dark, 0, 0.29, 2.1);
 
     // Black checker stripe along middle
-    const checkMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+    const checkMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.55, metalness: 0.10 });
     addBox(group, THREE, 2.1, 0.18, 4.17, checkMat, 0, 0.66, 0);
     // Yellow stripe on top of checker
-    addBox(group, THREE, 0.5, 0.2, 4.17, yellow, 0, 0.66, 0);
+    addBox(group, THREE, 0.5, 0.20, 4.17, yellow, 0, 0.66, 0);
+    // Chrome door trim
+    [-0.90, 0.90].forEach(x => addBox(group, THREE, 0.04, 0.04, 3.95, chr, x, 0.56, 0));
 
     // Taxi sign on roof
-    const signBase = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.22, 0.32), dark);
-    signBase.position.set(0, 1.3, -0.1);
+    const signBase = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.24, 0.34), dark);
+    signBase.position.set(0, 1.31, -0.1);
     group.add(signBase);
-    const signMat = new THREE.MeshLambertMaterial({ color: 0xffee44, emissive: new THREE.Color(0.5, 0.45, 0) });
-    addBox(group, THREE, 0.6, 0.15, 0.1, signMat, 0, 1.3, -0.1);
+    const signMat = new THREE.MeshStandardMaterial({ color: 0xffee44, emissive: new THREE.Color(0.55, 0.50, 0), emissiveIntensity: 1.1, roughness: 0.10 });
+    addBox(group, THREE, 0.62, 0.16, 0.10, signMat, 0, 1.31, -0.1);
 
     // Windows
     addBox(group, THREE, 1.65, 0.44, 0.06, glass, 0, 0.96, -1.2, -0.27, 0, 0);
@@ -531,11 +652,9 @@ export function buildTaxi(scene, THREE) {
 // ── POLICE CAR ────────────────────────────────────────────────────────────────
 export function buildPoliceCar(scene, THREE) {
     const group = new THREE.Group();
-    const white = new THREE.MeshLambertMaterial({ color: 0xeeeeee });
-    const dark = new THREE.MeshLambertMaterial({ color: new THREE.Color(0xeeeeee).lerp(new THREE.Color(0, 0, 0), 0.5) });
-    const glass = new THREE.MeshLambertMaterial({ color: 0x334466, transparent: true, opacity: 0.7 });
-    const chr = new THREE.MeshLambertMaterial({ color: 0x999aaa });
-    const blk = new THREE.MeshLambertMaterial({ color: 0x111111 });
+    const white = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.24, metalness: 0.40 });
+    const dark = new THREE.MeshStandardMaterial({ color: new THREE.Color(0xeeeeee).lerp(new THREE.Color(0, 0, 0), 0.52), roughness: 0.38, metalness: 0.42 });
+    const { chr, blk, glass } = getSharedMats(THREE);
 
     // Sedan shape
     addBox(group, THREE, 2.12, 0.52, 4.25, white, 0, 0.52, 0);
@@ -546,20 +665,20 @@ export function buildPoliceCar(scene, THREE) {
     addBox(group, THREE, 2.1, 0.22, 0.17, dark, 0, 0.3, 2.15);
 
     // Black & white police graphic
-    const policeDark = new THREE.MeshLambertMaterial({ color: 0x111111 });
+    const policeDark = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.55, metalness: 0.20 });
     addBox(group, THREE, 2.14, 0.4, 2.2, policeDark, 0, 0.42, 0.5); // rear dark
     addBox(group, THREE, 2.14, 0.4, 1.8, white, 0, 0.42, -1.0);    // front white
 
     // "POLICE" door badge
-    const badgeMat = new THREE.MeshLambertMaterial({ color: 0x2244cc, emissive: new THREE.Color(0.05, 0.1, 0.3) });
-    [-1.07, 1.07].forEach(x => addBox(group, THREE, 0.05, 0.22, 0.7, badgeMat, x, 0.65, -0.1));
+    const badgeMat = new THREE.MeshStandardMaterial({ color: 0x2244cc, emissive: new THREE.Color(0.06, 0.12, 0.4), emissiveIntensity: 0.7, roughness: 0.22, metalness: 0.30 });
+    [-1.08, 1.08].forEach(x => addBox(group, THREE, 0.06, 0.24, 0.74, badgeMat, x, 0.66, -0.1));
 
     // ── LIGHTBAR ──────────────────────────────────────────────────────────────
-    const lbBase = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.1, 0.55), chr);
-    lbBase.position.set(0, 1.35, -0.1);
+    const lbBase = new THREE.Mesh(new THREE.BoxGeometry(1.92, 0.10, 0.58), chr);
+    lbBase.position.set(0, 1.36, -0.1);
     group.add(lbBase);
-    const redPod = new THREE.MeshLambertMaterial({ color: 0xff0000, emissive: new THREE.Color(0.7, 0, 0) });
-    const bluePod = new THREE.MeshLambertMaterial({ color: 0x0044ff, emissive: new THREE.Color(0, 0.1, 0.8) });
+    const redPod = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: new THREE.Color(0.8, 0, 0), emissiveIntensity: 0.9, roughness: 0.10 });
+    const bluePod = new THREE.MeshStandardMaterial({ color: 0x0044ff, emissive: new THREE.Color(0, 0.12, 0.9), emissiveIntensity: 0.9, roughness: 0.10 });
     [-0.65, -0.22, 0.22, 0.65].forEach((x, i) => {
         const pod = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.16, 0.44), i % 2 === 0 ? redPod : bluePod);
         pod.position.set(x, 1.44, -0.1);
@@ -602,12 +721,10 @@ export function buildPoliceCar(scene, THREE) {
 // ── TRUCK / DELIVERY VAN ──────────────────────────────────────────────────────
 export function buildTruck(scene, THREE, color) {
     const group = new THREE.Group();
-    const body = new THREE.MeshLambertMaterial({ color });
-    const dark = new THREE.MeshLambertMaterial({ color: new THREE.Color(color).lerp(new THREE.Color(0, 0, 0), 0.4) });
-    const glass = new THREE.MeshLambertMaterial({ color: 0x334455, transparent: true, opacity: 0.65 });
-    const chr = new THREE.MeshLambertMaterial({ color: 0x888899 });
-    const blk = new THREE.MeshLambertMaterial({ color: 0x111111 });
-    const white = new THREE.MeshLambertMaterial({ color: 0xdddddd });
+    const body = new THREE.MeshStandardMaterial({ color, roughness: 0.30, metalness: 0.60 });
+    const dark = new THREE.MeshStandardMaterial({ color: new THREE.Color(color).lerp(new THREE.Color(0, 0, 0), 0.45), roughness: 0.42, metalness: 0.48 });
+    const white = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.48, metalness: 0.10 });
+    const { chr, blk, glass } = getSharedMats(THREE);
 
     // Cab
     addBox(group, THREE, 2.5, 1.6, 2.2, dark, 0, 1.0, -3.0);
@@ -627,8 +744,8 @@ export function buildTruck(scene, THREE, color) {
     addBox(group, THREE, 2.5, 1.85, 0.1, dark, 0, 1.22, 3.15);
     addBox(group, THREE, 2.3, 1.6, 0.07, white, 0, 1.22, 3.17); // door panel
     // Company logo area
-    const logoMat = new THREE.MeshLambertMaterial({ color: 0xcc4400, emissive: new THREE.Color(0.2, 0.05, 0) });
-    addBox(group, THREE, 1.8, 0.5, 0.06, logoMat, 0, 1.55, 3.18);
+    const logoMat = new THREE.MeshStandardMaterial({ color: 0xcc4400, emissive: new THREE.Color(0.25, 0.06, 0), emissiveIntensity: 0.7, roughness: 0.20 });
+    addBox(group, THREE, 1.82, 0.52, 0.07, logoMat, 0, 1.55, 3.18);
 
     // Bumpers
     addBox(group, THREE, 2.52, 0.3, 0.2, chr, 0, 0.28, -4.1);

@@ -8,16 +8,20 @@ export default defineConfig({
       name: 'spa-fallback',
       configureServer(server) {
         server.middlewares.use((req, _res, next) => {
-          // Sirf clean URL paths ko rewrite karo
-          // Assets, API, Vite internals ko touch mat karo
           const url = req.url?.split('?')[0] ?? '';
           const isViteInternal = url.startsWith('/@') || url.startsWith('/node_modules');
           const isAsset = url.includes('.');
           const isApi = url.startsWith('/api');
 
-          if (!isViteInternal && !isAsset && !isApi && url !== '/') {
+          // Static HTML routes — check these before SPA fallback
+          if (url === '/story' || url === '/story/') {
+            req.url = '/story.html';
+          } else if (url === '/comparison' || url === '/comparison/') {
+            req.url = '/comparison.html';
+          } else if (!isViteInternal && !isAsset && !isApi && url !== '/') {
             req.url = '/';
           }
+
           next();
         });
       }

@@ -165,7 +165,7 @@ export function GitHubConnect({ onConnect, loading, error, theme }) {
   }
 
   const ready = !loading && username.trim().length > 0;
-  const demos = ["cheshire137","torvalds", "gaearon", "sindresorhus"];
+  const demos = ["cheshire137", "torvalds", "gaearon", "sindresorhus"];
 
   const leftReviews = REVIEWS.slice(0, 4);
   const rightReviews = [...REVIEWS].reverse().slice(0, 4);
@@ -409,28 +409,44 @@ export function GitHubConnect({ onConnect, loading, error, theme }) {
       {/* Footer links */}
       <div style={{
         position: "relative", zIndex: 20,
-        fontSize: "0.62rem", color: theme.text, opacity: 0.65,
-        display: "flex", alignItems: "center", gap: "0.75rem",
-        flexWrap: "wrap", justifyContent: "center",
-        padding: "0.2rem 1rem 1.5rem",
+        display: "flex", flexDirection: "column", alignItems: "center",
+        gap: "0.35rem", padding: "0.2rem 1rem 1.5rem",
       }}>
-        <a href="https://natrajx.in" target="_blank" rel="noopener noreferrer"
-          style={{ color: "inherit", textDecoration: "none" }}
-          onMouseEnter={e => e.currentTarget.style.color = theme.accent}
-          onMouseLeave={e => e.currentTarget.style.color = "inherit"}
-        >natrajx.in</a>
-        <span>·</span>
-        <a href="https://natrajx.in/projects" target="_blank" rel="noopener noreferrer"
-          style={{ color: "inherit", textDecoration: "none" }}
-          onMouseEnter={e => e.currentTarget.style.color = theme.accent}
-          onMouseLeave={e => e.currentTarget.style.color = "inherit"}
-        >projects</a>
-        <span>·</span>
-        <a href="https://natrajx.in/blog" target="_blank" rel="noopener noreferrer"
-          style={{ color: "inherit", textDecoration: "none" }}
-          onMouseEnter={e => e.currentTarget.style.color = theme.accent}
-          onMouseLeave={e => e.currentTarget.style.color = "inherit"}
-        >blog</a>
+        {/* Row 1 — story · comparison */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: "0.6rem",
+          fontSize: "0.6rem", color: theme.text, opacity: 0.55,
+        }}>
+          {[
+            { label: "story", href: "https://gitcity.natrajx.in/story" },
+            { label: "comparison", href: "https://gitcity.natrajx.in/comparison" },
+          ].map(({ label, href }, i, arr) => (
+            <span key={label} style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+              <a
+                href={href}
+                target="_blank" rel="noopener noreferrer"
+                style={{ color: "inherit", textDecoration: "none", letterSpacing: "0.08em" }}
+                onMouseEnter={e => e.currentTarget.style.color = theme.accent}
+                onMouseLeave={e => e.currentTarget.style.color = "inherit"}
+              >{label}</a>
+              {i < arr.length - 1 && <span style={{ opacity: 0.4 }}>·</span>}
+            </span>
+          ))}
+        </div>
+
+        {/* Row 2 — built by Rishabh Bhartiya */}
+        <div style={{ fontSize: "0.58rem", opacity: 0.4, letterSpacing: "0.06em" }}>
+          built by{" "}
+          <a
+            href="https://github.com/rishabhbhartiya"
+            target="_blank" rel="noopener noreferrer"
+            style={{ color: theme.muted, textDecoration: "none" }}
+            onMouseEnter={e => e.currentTarget.style.color = theme.accent}
+            onMouseLeave={e => e.currentTarget.style.color = theme.muted}
+          >
+            Rishabh Bhartiya
+          </a>
+        </div>
       </div>
 
       <style>{`

@@ -2,45 +2,60 @@
  * CityAssets.js — GitCity
  * Decorative city assets: benches, lamp posts, shops, gardens, playgrounds
  *
+ * FIXES v2:
+ * - All placement helpers now accept an explicit `roadW` parameter and push
+ *   assets to FURNITURE_OFFSET (roadW/2 + 1.8) from the road centre.
+ * - decoratePlaza now validates every candidate point with the caller-supplied
+ *   isOnFootpath() guard before placing anything.
+ * - New placeFurnitureAlongRoad() utility for batch sidewalk furniture.
+ * - Asset functions themselves are unchanged (they position within the group).
+ *
  * Usage:
- *   import { addBench, addGarden, addPlayground, addShop } from "./CityAssets";
- *   addBench(scene, THREE, x, z);
- *   addGarden(scene, THREE, x, z);
+ *   import {
+ *     addBench, addGarden, addPlayground, addShop,
+ *     addKiosk, addTrashBin, addPicnicTable,
+ *     decoratePlaza, placeFurnitureAlongRoad
+ *   } from "./CityAssets";
+ *
+ *   // Place individual items (always supply a confirmed sidewalk position):
+ *   addBench(scene, THREE, sidewalkX, sidewalkZ);
+ *   addGarden(scene, THREE, sidewalkX, sidewalkZ);
+ *
+ *   // Batch-place along a road segment (safe, checked internally):
+ *   placeFurnitureAlongRoad(scene, THREE, x1, z1, x2, z2, roadW, isOnFootpath);
+ *
+ *   // Decorate a plaza (pass isOnFootpath validator from CitySimulation):
+ *   decoratePlaza(scene, THREE, cx, cz, radius, density, isOnFootpath);
  */
+
+// ── CONSTANTS ─────────────────────────────────────────────────────────────────
+// These mirror the constants in CitySimulation.jsx.  They are only used by
+// the placement helpers; individual asset constructors don't need them.
+const DEFAULT_ROAD_W = 9;
+const FOOTPATH_OFFSET_FAC = 0.5 + 1.1 / DEFAULT_ROAD_W;   // ≈ road/2 + 1.1
+const FURNITURE_OFFSET = DEFAULT_ROAD_W / 2 + 1.8;      // 6.3 from road centre
+
 
 // ── BENCH ──────────────────────────────────────────────────────────────────────
 export function addBench(scene, THREE, x, z) {
     const group = new THREE.Group();
-
     const woodMat = new THREE.MeshLambertMaterial({ color: 0x8b6f47 });
     const metalMat = new THREE.MeshLambertMaterial({ color: 0x5a5a5a });
 
-    // Seat — long wood plank
-    const seat = new THREE.Mesh(
-        new THREE.BoxGeometry(2.4, 0.1, 0.5),
-        woodMat
-    );
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.1, 0.5), woodMat);
     seat.position.y = 0.45;
     seat.castShadow = true;
     group.add(seat);
 
-    // Backrest
-    const back = new THREE.Mesh(
-        new THREE.BoxGeometry(2.4, 0.6, 0.12),
-        woodMat
-    );
+    const back = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.6, 0.12), woodMat);
     back.position.y = 0.85;
     back.position.z = -0.25;
     back.rotation.x = 0.15;
     back.castShadow = true;
     group.add(back);
 
-    // Legs — 4 metal cylinders
     [[-1.1, -0.2], [-1.1, 0.2], [1.1, -0.2], [1.1, 0.2]].forEach(([lx, lz]) => {
-        const leg = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.05, 0.05, 0.45, 8),
-            metalMat
-        );
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.45, 8), metalMat);
         leg.position.set(lx, 0.225, lz);
         leg.castShadow = true;
         group.add(leg);
@@ -51,37 +66,25 @@ export function addBench(scene, THREE, x, z) {
     return group;
 }
 
+
 // ── PICNIC TABLE ───────────────────────────────────────────────────────────────
 export function addPicnicTable(scene, THREE, x, z) {
     const group = new THREE.Group();
     const woodMat = new THREE.MeshLambertMaterial({ color: 0x9d7d5a });
 
-    // Top surface
-    const top = new THREE.Mesh(
-        new THREE.BoxGeometry(1.8, 0.08, 1.2),
-        woodMat
-    );
+    const top = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.08, 1.2), woodMat);
     top.position.y = 0.55;
     top.castShadow = true;
     group.add(top);
 
-    // Center support
-    const support = new THREE.Mesh(
-        new THREE.BoxGeometry(0.3, 0.55, 0.3),
-        woodMat
-    );
+    const support = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.55, 0.3), woodMat);
     support.position.y = 0.275;
     support.castShadow = true;
     group.add(support);
 
-    // Benches on sides
-    for (let side of [-0.8, 0.8]) {
-        const bench = new THREE.Mesh(
-            new THREE.BoxGeometry(1.8, 0.08, 0.35),
-            woodMat
-        );
-        bench.position.y = 0.35;
-        bench.position.z = side;
+    for (const side of [-0.8, 0.8]) {
+        const bench = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.08, 0.35), woodMat);
+        bench.position.set(0, 0.35, side);
         bench.castShadow = true;
         group.add(bench);
     }
@@ -91,36 +94,24 @@ export function addPicnicTable(scene, THREE, x, z) {
     return group;
 }
 
+
 // ── TRASH BIN ──────────────────────────────────────────────────────────────────
 export function addTrashBin(scene, THREE, x, z) {
     const group = new THREE.Group();
-
     const binMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
     const metalMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
 
-    // Cylindrical bin body
-    const bin = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.3, 0.32, 0.8, 12),
-        binMat
-    );
+    const bin = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.32, 0.8, 12), binMat);
     bin.position.y = 0.4;
     bin.castShadow = true;
     group.add(bin);
 
-    // Metal rim at top
-    const rim = new THREE.Mesh(
-        new THREE.TorusGeometry(0.32, 0.06, 8, 12),
-        metalMat
-    );
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.06, 8, 12), metalMat);
     rim.rotation.x = Math.PI / 2;
     rim.position.y = 0.82;
     group.add(rim);
 
-    // Metal post/pole
-    const pole = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.04, 0.04, 0.4, 8),
-        metalMat
-    );
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.4, 8), metalMat);
     pole.position.y = 0.2;
     group.add(pole);
 
@@ -129,12 +120,12 @@ export function addTrashBin(scene, THREE, x, z) {
     return group;
 }
 
+
 // ── GARDEN / FLOWER BOX ────────────────────────────────────────────────────────
 export function addGarden(scene, THREE, x, z, size = 1) {
     const group = new THREE.Group();
-
-    // Wooden planter box
     const boxMat = new THREE.MeshLambertMaterial({ color: 0x7a5c3d });
+
     const box = new THREE.Mesh(
         new THREE.BoxGeometry(1.2 * size, 0.4 * size, 1.2 * size),
         boxMat
@@ -143,7 +134,6 @@ export function addGarden(scene, THREE, x, z, size = 1) {
     box.castShadow = true;
     group.add(box);
 
-    // Soil — darker brown
     const soil = new THREE.Mesh(
         new THREE.BoxGeometry(1.15 * size, 0.38 * size, 1.15 * size),
         new THREE.MeshLambertMaterial({ color: 0x4a3c2a })
@@ -151,24 +141,21 @@ export function addGarden(scene, THREE, x, z, size = 1) {
     soil.position.y = 0.25 * size;
     group.add(soil);
 
-    // Flowers — random colored spheres
     const flowerColors = [0xff6b9d, 0xffb347, 0x87ceeb, 0xffff99, 0xb19cd9];
-    const flowerCount = 8;
-    for (let i = 0; i < flowerCount; i++) {
-        const ang = (i / flowerCount) * Math.PI * 2;
+    for (let i = 0; i < 8; i++) {
+        const ang = (i / 8) * Math.PI * 2;
         const rad = 0.35 * size;
-        const fx = x + Math.cos(ang) * rad;
-        const fz = z + Math.sin(ang) * rad;
-
+        // Place flowers in LOCAL space so they move with the group
         const flower = new THREE.Mesh(
             new THREE.SphereGeometry(0.15 * size, 8, 8),
-            new THREE.MeshLambertMaterial({
-                color: flowerColors[i % flowerColors.length],
-            })
+            new THREE.MeshLambertMaterial({ color: flowerColors[i % flowerColors.length] })
         );
-        flower.position.set(fx, 0.5 * size, fz);
+        flower.position.set(
+            Math.cos(ang) * rad,
+            0.5 * size,
+            Math.sin(ang) * rad
+        );
         flower.castShadow = true;
-        scene.add(flower);
         group.add(flower);
     }
 
@@ -177,44 +164,32 @@ export function addGarden(scene, THREE, x, z, size = 1) {
     return group;
 }
 
+
 // ── PLAYGROUND ────────────────────────────────────────────────────────────────
 export function addPlayground(scene, THREE, x, z) {
     const group = new THREE.Group();
     const metalMat = new THREE.MeshLambertMaterial({ color: 0xcc3333 });
 
-    // Swing frame
-    const frameLeg = (xOff) => {
-        const leg = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.06, 0.06, 2, 8),
-            metalMat
-        );
+    // Swing frame legs
+    [-0.8, 0.8].forEach((xOff) => {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2, 8), metalMat);
         leg.position.set(xOff, 1, 0);
         leg.castShadow = true;
         group.add(leg);
-    };
-    frameLeg(-0.8);
-    frameLeg(0.8);
+    });
 
     // Top beam
-    const beam = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.05, 0.05, 1.8, 8),
-        metalMat
-    );
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.8, 8), metalMat);
     beam.rotation.z = Math.PI / 2;
     beam.position.y = 2;
     group.add(beam);
 
-    // Swings (2)
-    for (let sx of [-0.4, 0.4]) {
-        // Chains
-        const chain = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.02, 0.02, 1.2, 6),
-            metalMat
-        );
+    // Swings
+    for (const sx of [-0.4, 0.4]) {
+        const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.2, 6), metalMat);
         chain.position.set(sx, 1.4, 0);
         group.add(chain);
 
-        // Seat
         const seat = new THREE.Mesh(
             new THREE.BoxGeometry(0.3, 0.08, 0.3),
             new THREE.MeshLambertMaterial({ color: 0xffcc33 })
@@ -224,11 +199,8 @@ export function addPlayground(scene, THREE, x, z) {
         group.add(seat);
     }
 
-    // Slide
-    const slideBase = new THREE.Mesh(
-        new THREE.BoxGeometry(0.5, 0.1, 2),
-        metalMat
-    );
+    // Slide base
+    const slideBase = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 2), metalMat);
     slideBase.position.set(2, 0.3, 0);
     slideBase.castShadow = true;
     group.add(slideBase);
@@ -247,37 +219,26 @@ export function addPlayground(scene, THREE, x, z) {
     return group;
 }
 
+
 // ── STREET VENDOR / KIOSK ──────────────────────────────────────────────────────
 export function addKiosk(scene, THREE, x, z) {
     const group = new THREE.Group();
-
-    // Base platform
     const baseMat = new THREE.MeshLambertMaterial({ color: 0x8b7355 });
-    const base = new THREE.Mesh(
-        new THREE.BoxGeometry(1.5, 0.15, 1.5),
-        baseMat
-    );
+    const wallMat = new THREE.MeshLambertMaterial({ color: 0xffe6cc });
+
+    const base = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.15, 1.5), baseMat);
     base.castShadow = true;
     group.add(base);
 
-    // Walls
-    const wallMat = new THREE.MeshLambertMaterial({ color: 0xffe6cc });
     for (let i = 0; i < 4; i++) {
         const angle = (i / 4) * Math.PI * 2;
-        const wx = Math.cos(angle) * 0.7;
-        const wz = Math.sin(angle) * 0.7;
-
-        const wall = new THREE.Mesh(
-            new THREE.BoxGeometry(0.15, 1.2, 0.6),
-            wallMat
-        );
-        wall.position.set(wx, 0.6, wz);
+        const wall = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.2, 0.6), wallMat);
+        wall.position.set(Math.cos(angle) * 0.7, 0.6, Math.sin(angle) * 0.7);
         wall.rotation.y = angle;
         wall.castShadow = true;
         group.add(wall);
     }
 
-    // Roof — cone
     const roof = new THREE.Mesh(
         new THREE.ConeGeometry(1.1, 0.6, 16),
         new THREE.MeshLambertMaterial({ color: 0xff6b35 })
@@ -291,8 +252,90 @@ export function addKiosk(scene, THREE, x, z) {
     return group;
 }
 
-// ── UTILITY: Add random assets to a plaza/square ──────────────────────────────
-export function decoratePlaza(scene, THREE, centerX, centerZ, radius, density = 0.15) {
+
+// ── UTILITY: Place furniture along a road segment ─────────────────────────────
+/**
+ * placeFurnitureAlongRoad
+ *
+ * Distributes benches, trash bins, gardens, and kiosks along both sides of a
+ * road segment. Every candidate position is tested with `isOnFootpathFn`
+ * before placing — so no asset can land on the carriageway.
+ *
+ * @param {object}   scene
+ * @param {object}   THREE
+ * @param {number}   x1, z1         road segment start
+ * @param {number}   x2, z2         road segment end
+ * @param {number}   [roadW=9]      road width
+ * @param {Function} [isOnFootpathFn]  optional validator (x,z)→bool
+ * @param {number}   [spacing=14]   units between furniture placements
+ */
+export function placeFurnitureAlongRoad(
+    scene, THREE,
+    x1, z1, x2, z2,
+    roadW = DEFAULT_ROAD_W,
+    isOnFootpathFn = null,
+    spacing = 14
+) {
+    const dx = x2 - x1, dz = z2 - z1;
+    const len = Math.sqrt(dx * dx + dz * dz);
+    if (len < 0.5) return;
+    const nx = -dz / len, nz = dx / len;
+
+    // FURNITURE_OFFSET from road centre — always outside the carriageway
+    const offset = roadW / 2 + 1.8;
+
+    const assetFns = [
+        (x, z) => addBench(scene, THREE, x, z),
+        (x, z) => addTrashBin(scene, THREE, x, z),
+        (x, z) => addGarden(scene, THREE, x, z, 0.8),
+        (x, z) => addKiosk(scene, THREE, x, z),
+    ];
+
+    const steps = Math.max(1, Math.floor(len / spacing));
+    let assetIdx = 0;
+
+    for (let i = 1; i < steps; i++) {
+        const t = i / steps;
+        const bx = x1 + dx * t, bz = z1 + dz * t;
+
+        for (const side of [-1, 1]) {
+            const fx = bx + nx * offset * side;
+            const fz = bz + nz * offset * side;
+
+            // Skip if validator says the point is on the road / inside a block
+            if (isOnFootpathFn && !isOnFootpathFn(fx, fz)) continue;
+
+            // Stagger asset types so both sides don't always get the same thing
+            const fn = assetFns[assetIdx % assetFns.length];
+            fn(fx, fz);
+            assetIdx++;
+        }
+    }
+}
+
+
+// ── UTILITY: Decorate a plaza / square ────────────────────────────────────────
+/**
+ * decoratePlaza
+ *
+ * Scatters benches, trash bins, gardens and kiosks in a circular area.
+ * Validates every candidate with `isOnFootpathFn` when supplied so no
+ * asset can accidentally land on the road carriageway.
+ *
+ * @param {object}   scene
+ * @param {object}   THREE
+ * @param {number}   centerX, centerZ
+ * @param {number}   radius           max distance from centre
+ * @param {number}   [density=0.15]   probability of placing at each grid cell
+ * @param {Function} [isOnFootpathFn] optional validator (x,z)→bool
+ */
+export function decoratePlaza(
+    scene, THREE,
+    centerX, centerZ,
+    radius,
+    density = 0.15,
+    isOnFootpathFn = null
+) {
     const assetTypes = [
         (x, z) => addBench(scene, THREE, x, z),
         (x, z) => addTrashBin(scene, THREE, x, z),
@@ -301,16 +344,23 @@ export function decoratePlaza(scene, THREE, centerX, centerZ, radius, density = 
     ];
 
     const gridSize = 3;
+    let assetIdx = 0;
+
     for (let gx = -gridSize; gx <= gridSize; gx++) {
         for (let gz = -gridSize; gz <= gridSize; gz++) {
             if (Math.random() > density) continue;
+
             const px = centerX + gx * 2.5;
             const pz = centerZ + gz * 2.5;
             const dist = Math.sqrt((px - centerX) ** 2 + (pz - centerZ) ** 2);
             if (dist > radius) continue;
 
-            const asset = assetTypes[Math.floor(Math.random() * assetTypes.length)];
-            asset(px, pz);
+            // Validator guard — skip if inside road carriageway or building
+            if (isOnFootpathFn && !isOnFootpathFn(px, pz)) continue;
+
+            const fn = assetTypes[assetIdx % assetTypes.length];
+            fn(px, pz);
+            assetIdx++;
         }
     }
 }

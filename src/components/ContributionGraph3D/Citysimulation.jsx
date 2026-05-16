@@ -1,12 +1,18 @@
 /**
- * CitySimulation.jsx — GitCity v14 (fixed)
- * FIXES:
- * - Lamp posts, benches, kiosks placed firmly on footpath (never on road)
- * - Traffic signals placed at footpath corners (not road center)
- * - Street signs, distance boards on footpath side only
- * - Parked vehicles spaced so they don't overlap each other
- * - Pedestrian speed reduced
- * - Traffic lane offsets fixed to prevent vehicle overlap
+ * CitySimulation.jsx — GitCity v16
+ * CHANGES from v15:
+ * - Removed Leaves (spring) and Snow weather modes entirely
+ * - Weather is now fully automatic — no user controls
+ *   · 30 s after simulation start: pre-storm dust begins
+ *   · 10 s later: full storm (rain + lightning)
+ *   · Storm lasts 60 s, then transitions to mist/fog
+ *   · Mist persists for 90 s, then clears
+ *   · Next cycle starts at a random interval (60–180 s) after clear
+ * - Pre-storm: rolling dust clouds at road level
+ * - Post-storm: varied mist patches across city (not uniform)
+ * - Audio: rain.mp3 during storm, wind.mp3 (low vol) during dust+mist
+ * - music.mp3 plays automatically on load (always on)
+ * - Removed Music On/Off button
  */
 
 import { useEffect, useRef, useState, useMemo } from "react";
@@ -14,8 +20,16 @@ import { createWeatherSystem } from "./WeatherSystem";
 import { createPedestrianSystem, addTree } from "./PedestrianSystem";
 import { createTrafficSystem } from "./CityTraffic";
 import { buildVehicle, updateVehicleLights } from "./CityVehicles";
-import { addTrafficSignal, addStreetSign, addDistanceBoard, addBillboard } from "./CitySignage";
-import { decoratePlaza, addBench, addKiosk, addGarden } from "./CityAssets";
+import {
+    addTrafficSignal, addStreetSign, addDistanceBoard, addBillboard,
+    addLampWithRays,
+    placeSignalAtCorner, placeSignMidBlock,
+    updateSignageAnimations,
+} from "./CitySignage";
+import {
+    decoratePlaza, addBench, addKiosk, addGarden,
+    placeFurnitureAlongRoad,
+} from "./CityAssets";
 
 const CELL = 7, ROAD = 9, WEEKS = 4;
 
@@ -100,37 +114,37 @@ function aabbPushOut(mover, obstacle) {
     return { px: 0, pz: Math.sign(dz) * oz };
 }
 
-// ── WEATHER MODES ─────────────────────────────────────────────────────────────
-const WEATHER_MODES = [
-    { key: "clear", label: "☀ Clear" },
-    { key: "storm", label: "⛈ Storm" },
-    { key: "spring", label: "🍂 Leaves" },
-    { key: "snow", label: "❄ Snow" },
-];
-
 export function CitySimulation({ cells, stats, theme, profile }) {
     const mountRef = useRef(null);
     const keysRef = useRef({});
     const mouseRef = useRef({ down: false, lx: 0, ly: 0, ox: 0, oy: 0.3, zoom: 1, orbit: false });
     const hoverRef = useRef({ nx: 0, ny: 0 });
     const frameRef = useRef(null);
-    const nightRef = useRef(true);
     const weatherRef = useRef(null);
     const trafficRef = useRef(null);
     const audioRef = useRef(null);
     const playerCarRef = useRef(null);
 
+    // Audio refs for sound effects
+    const rainAudioRef = useRef(null);
+    const crashAudioRef = useRef(null);
+    const blastAudioRef = useRef(null);
+
+    // Weather auto-scheduler — tracks ALL pending timers so none get lost
+    // phase: "clear" | "pre-storm" | "storm" | "mist"
+    const weatherPhaseRef = useRef("clear");
+    const weatherTimersRef = useRef([]); // array of all pending timer IDs
+
+
+
     const [loaded, setLoaded] = useState(false);
     const [error, setError] = useState(null);
-    const [night, setNight] = useState(true);
-    const [weatherMode, setWeatherMode] = useState("clear");
     const [card, setCard] = useState(null);
     const [kmh, setKmh] = useState(0);
     const [loc, setLoc] = useState("GitCity");
     const [mm, setMm] = useState({ cx: 0, cz: 0, sc: 0.4, blocks: [] });
     const [showHelp, setShowHelp] = useState(false);
     const [welcome, setWelcome] = useState(true);
-    const [musicOn, setMusicOn] = useState(false);
 
     const districts = useMemo(() => groupDistricts(cells), [cells]);
     const maxTotal = useMemo(() => Math.max(...districts.map((d) => d.total), 1), [districts]);
@@ -152,23 +166,69 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         return () => clearTimeout(t);
     }, [loaded]);
 
-    // ── Music ─────────────────────────────────────────────────────────────────
+    // ── Music (always on, auto-play) ──────────────────────────────────────────
     useEffect(() => {
         const audio = new Audio("/music.mp3");
         audio.loop = true; audio.volume = 0.35;
         audioRef.current = audio;
-        return () => { audio.pause(); audio.src = ""; };
+        // Auto-play on first user interaction (browser autoplay policy)
+        const tryPlay = () => {
+            audio.play().catch(() => { });
+            window.removeEventListener("click", tryPlay);
+            window.removeEventListener("keydown", tryPlay);
+        };
+        window.addEventListener("click", tryPlay);
+        window.addEventListener("keydown", tryPlay);
+        // Also try immediately (works after prior interaction)
+        audio.play().catch(() => { });
+        return () => {
+            audio.pause(); audio.src = "";
+            window.removeEventListener("click", tryPlay);
+            window.removeEventListener("keydown", tryPlay);
+        };
     }, []);
 
+    // ── Weather Audio (rain.mp3 used for both storm and wind/mist at diff volumes) ──
     useEffect(() => {
-        const audio = audioRef.current;
-        if (!audio) return;
-        if (musicOn) audio.play().catch(() => { });
-        else audio.pause();
-    }, [musicOn]);
+        const rainAudio = new Audio("/rain.mp3");
+        rainAudio.loop = true; rainAudio.volume = 0;
+        rainAudioRef.current = rainAudio;
+        return () => { rainAudio.pause(); rainAudio.src = ""; };
+    }, []);
 
-    useEffect(() => { nightRef.current = night; }, [night]);
-    useEffect(() => { if (weatherRef.current) weatherRef.current.setMode(weatherMode); }, [weatherMode]);
+    // ── Collision Sound Effects ───────────────────────────────────────────────
+    // FIX: Unlock audio context on first user interaction (browser autoplay policy).
+    // Without this, .play() silently fails until the user has interacted with the page.
+    useEffect(() => {
+        const crashAudio = new Audio("/crash.mp3");
+        crashAudio.volume = 0.8;
+        crashAudio.preload = "auto";
+        crashAudioRef.current = crashAudio;
+
+        const blastAudio = new Audio("/blast.mp3");
+        blastAudio.volume = 0.9;
+        blastAudio.preload = "auto";
+        blastAudioRef.current = blastAudio;
+
+        // Unlock both audio elements on first user gesture so subsequent
+        // programmatic .play() calls are never blocked by the browser.
+        const unlock = () => {
+            [crashAudio, blastAudio].forEach(a => {
+                a.play().then(() => { a.pause(); a.currentTime = 0; }).catch(() => { });
+            });
+            window.removeEventListener("click", unlock);
+            window.removeEventListener("keydown", unlock);
+        };
+        window.addEventListener("click", unlock);
+        window.addEventListener("keydown", unlock);
+
+        return () => {
+            crashAudio.src = "";
+            blastAudio.src = "";
+            window.removeEventListener("click", unlock);
+            window.removeEventListener("keydown", unlock);
+        };
+    }, []);
 
     // ── MAIN THREE.JS EFFECT ──────────────────────────────────────────────────
     useEffect(() => {
@@ -282,7 +342,7 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         // ── WEATHER SYSTEM ────────────────────────────────────────────────────
         const weather = createWeatherSystem(scene, THREE, cityW, cityD);
         weatherRef.current = weather;
-        weather.setMode(weatherMode);
+        // Weather starts clear; auto-scheduler drives all phase transitions
 
         // ── COLLISION BOXES ───────────────────────────────────────────────────
         const collisionBoxes = [];
@@ -307,11 +367,8 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         }
 
         // ── FOOTPATH DRAWING ──────────────────────────────────────────────────
-        // FIX: footpath offset from road CENTRE = ROAD/2 + 1.1  (unchanged)
-        // Furniture must be placed at this offset or slightly further OUT
-        // away from road (never closer than ROAD/2 + 0.5 to road centre)
-        const FOOTPATH_OFFSET = ROAD / 2 + 1.1;   // centre of footpath strip
-        const FURNITURE_OFFSET = ROAD / 2 + 1.8;  // slightly further from road edge
+        const FOOTPATH_OFFSET = ROAD / 2 + 1.1;
+        const FURNITURE_OFFSET = ROAD / 2 + 1.8;
 
         function drawFootpath(x1, z1, x2, z2) {
             const dx = x2 - x1, dz = z2 - z1;
@@ -344,8 +401,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
             });
         }
 
-        // Footpath furniture positions along a road segment
-        // FIX: use FURNITURE_OFFSET (slightly outside footpath centre, away from road)
         function getFootpathPoints(x1, z1, x2, z2, spacing = 14) {
             const dx = x2 - x1, dz = z2 - z1;
             const len = Math.sqrt(dx * dx + dz * dz);
@@ -356,7 +411,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
             for (let i = 1; i < steps; i++) {
                 const t = i / steps;
                 const bx = x1 + dx * t, bz = z1 + dz * t;
-                // Push furniture further out from road (FURNITURE_OFFSET > FOOTPATH_OFFSET)
                 pts.push(
                     { x: bx + nx * FURNITURE_OFFSET, z: bz + nz * FURNITURE_OFFSET },
                     { x: bx - nx * FURNITURE_OFFSET, z: bz - nz * FURNITURE_OFFSET }
@@ -367,21 +421,15 @@ export function CitySimulation({ cells, stats, theme, profile }) {
 
         const footpathPoints = [];
 
-        // ── LAMP POST ─────────────────────────────────────────────────────────
-        // FIX: lamp placed at exact footpath side position, never on road
-        function addLamp(x, z) {
-            const p = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 7, 6), lampMat);
-            p.position.set(x, 3.5, z);
-            scene.add(p);
-            const a = new THREE.Mesh(new THREE.BoxGeometry(2, 0.08, 0.08), lampMat);
-            a.position.set(x + 1, 7.1, z);
-            scene.add(a);
-            const b = new THREE.Mesh(new THREE.SphereGeometry(0.22, 6, 6), new THREE.MeshLambertMaterial({ color: 0xffffcc, emissive: new THREE.Color(0.85, 0.85, 0.15) }));
-            b.position.set(x + 2, 7.0, z);
-            scene.add(b);
-            const pl = new THREE.PointLight(0xffeeaa, 0.8, 18);
-            pl.position.set(x + 2, 6.8, z);
-            scene.add(pl);
+        // ── LAMP POST ────────────────────────────────────────────────────────
+        function addLamp(x, z, roadTarget, axis) {
+            let armDirX = 0, armDirZ = 0;
+            if (axis === "x") {
+                armDirX = Math.sign(roadTarget - x);
+            } else {
+                armDirZ = Math.sign(roadTarget - z);
+            }
+            addLampWithRays(scene, THREE, x, z, lampMat, armDirX, armDirZ);
         }
 
         const treeTypes = ["oak", "pine", "palm", "cherry", "dead"];
@@ -391,6 +439,9 @@ export function CitySimulation({ cells, stats, theme, profile }) {
             return r2 + "_" + c2;
         }));
         function hasDistrict(r2, c2) { return occupied.has(r2 + "_" + c2); }
+
+        const trafficSignals = [];
+        const animatedSigns = [];
 
         // ── Build roads + footpaths ───────────────────────────────────────────
         for (let r = 0; r <= rows; r++) {
@@ -407,25 +458,18 @@ export function CitySimulation({ cells, stats, theme, profile }) {
             footpathPoints.push(...getFootpathPoints(x1, rz, x2, rz, 16));
 
             for (let c = minC; c <= maxC; c++) {
-                const tx = ox + c * (BW + ROAD) + ROAD + BW / 2;
+                const blockStartX = ox + c * (BW + ROAD) + ROAD;
 
-                // FIX: Trees on footpath strip, pushed well outside road edge
-                addTree(scene, THREE, tx, rz - FURNITURE_OFFSET - 0.3, treeTypes[treeTypeIdx++ % treeTypes.length], 0.85);
-                addTree(scene, THREE, tx, rz + FURNITURE_OFFSET + 0.3, treeTypes[treeTypeIdx++ % treeTypes.length], 0.85);
+                const TREE_Z_OFF = ROAD / 2 + 0.8;
+                const LAMP_Z_OFF = ROAD / 2 + 1.1;
+                const treeX1 = blockStartX + BW * 0.20;
+                const treeX2 = blockStartX + BW * 0.70;
+                addTree(scene, THREE, treeX1, rz - TREE_Z_OFF, treeTypes[treeTypeIdx++ % treeTypes.length], 0.72);
+                addTree(scene, THREE, treeX2, rz + TREE_Z_OFF, treeTypes[treeTypeIdx++ % treeTypes.length], 0.72);
 
-                // FIX: Lamp on outer edge of footpath (away from road)
-                addLamp(ox + c * (BW + ROAD) + ROAD * 0.5 + 1.5, rz + FURNITURE_OFFSET + 0.5);
-
-                if (r % 2 === 0 && c % 2 === 0) {
-                    // FIX: Traffic signal placed at footpath outer edge corner
-                    // (FURNITURE_OFFSET from road centre, not on road itself)
-                    const states = ["red", "yellow", "green"];
-                    addTrafficSignal(scene, THREE,
-                        ox + c * (BW + ROAD) + ROAD + 1.2,
-                        rz + FURNITURE_OFFSET + 0.6,
-                        states[Math.floor(Math.random() * states.length)]
-                    );
-                }
+                const lampPoleX = blockStartX + BW * 0.50;
+                addLamp(lampPoleX, rz - LAMP_Z_OFF, rz, "z");
+                addLamp(lampPoleX, rz + LAMP_Z_OFF, rz, "z");
             }
         }
 
@@ -443,20 +487,29 @@ export function CitySimulation({ cells, stats, theme, profile }) {
             footpathPoints.push(...getFootpathPoints(rx, z1, rx, z2, 16));
 
             for (let r = minR; r <= maxR; r++) {
-                const tz = oz + r * (BD + ROAD) + ROAD + BD / 2;
+                const blockStartZ = oz + r * (BD + ROAD) + ROAD;
 
-                // FIX: Trees on footpath side (FURNITURE_OFFSET away from road centre)
-                addTree(scene, THREE, rx - FURNITURE_OFFSET - 0.3, tz, treeTypes[treeTypeIdx++ % treeTypes.length], 0.85);
-                addTree(scene, THREE, rx + FURNITURE_OFFSET + 0.3, tz, treeTypes[treeTypeIdx++ % treeTypes.length], 0.85);
+                const TREE_X_OFF = ROAD / 2 + 0.8;
+                const LAMP_X_OFF = ROAD / 2 + 1.1;
+                const treeZ1 = blockStartZ + BD * 0.20;
+                const treeZ2 = blockStartZ + BD * 0.70;
+                addTree(scene, THREE, rx - TREE_X_OFF, treeZ1, treeTypes[treeTypeIdx++ % treeTypes.length], 0.72);
+                addTree(scene, THREE, rx + TREE_X_OFF, treeZ2, treeTypes[treeTypeIdx++ % treeTypes.length], 0.72);
+
+                const lampPoleZ = blockStartZ + BD * 0.50;
+                addLamp(rx - LAMP_X_OFF, lampPoleZ, rx, "x");
+                addLamp(rx + LAMP_X_OFF, lampPoleZ, rx, "x");
 
                 if (r % 3 === 0) {
-                    // FIX: Street sign on footpath side (not on road)
-                    addStreetSign(scene, THREE, rx + FURNITURE_OFFSET + 0.5, tz - BD * 0.3, "GitAve", "Code St");
+                    const SIGN_OFFSET = ROAD / 2 + 1.5;
+                    const signZ = blockStartZ + BD * 0.5;
+                    addStreetSign(scene, THREE, rx + SIGN_OFFSET, signZ, "GitAve", "Code St", animatedSigns);
+                    addStreetSign(scene, THREE, rx - SIGN_OFFSET, signZ, "GitAve", "Code St", animatedSigns);
                 }
             }
         }
 
-        // Intersection corner pads
+        // Intersection corner pads + traffic signals
         for (let r = 0; r <= rows; r++) {
             for (let c = 0; c <= cols; c++) {
                 const adj =
@@ -476,20 +529,21 @@ export function CitySimulation({ cells, stats, theme, profile }) {
                 const cp2 = cornerPad.clone(); cp2.position.set(ix - ROAD / 2 - 1.1, 0.11, iz + ROAD / 2 + 1.1); scene.add(cp2);
                 const cp3 = cornerPad.clone(); cp3.position.set(ix + ROAD / 2 + 1.1, 0.11, iz - ROAD / 2 - 1.1); scene.add(cp3);
                 const cp4 = cornerPad.clone(); cp4.position.set(ix - ROAD / 2 - 1.1, 0.11, iz - ROAD / 2 - 1.1); scene.add(cp4);
+
+                if ((r + c) % 2 === 0) {
+                    placeSignalAtCorner(scene, THREE, ix, iz, ROAD, animatedSigns, "green");
+                }
             }
         }
 
         // ── Helper: is a point safely on footpath ─────────────────────────────
-        // FIX: tighter check — point must be at least ROAD/2 + 0.8 from road centre
         function isOnFootpath(x, z) {
-            // Must not be inside any building block
             for (let di = 0; di < districts.length; di++) {
                 const col = di % cols, row = Math.floor(di / cols);
                 const bx0 = ox + col * (BW + ROAD) + ROAD;
                 const bz0 = oz + row * (BD + ROAD) + ROAD;
                 if (x > bx0 - 1.5 && x < bx0 + BW + 1.5 && z > bz0 - 1.5 && z < bz0 + BD + 1.5) return false;
             }
-            // Must be outside road carriageway — min distance from road centre = ROAD/2 + 0.8
             for (const seg of roadSegs) {
                 const ex = x - seg.x1, ez = z - seg.z1;
                 let t = (ex * seg.dx + ez * seg.dz) / seg.len;
@@ -497,18 +551,10 @@ export function CitySimulation({ cells, stats, theme, profile }) {
                 const px2 = seg.x1 + seg.dx * seg.len * t;
                 const pz2 = seg.z1 + seg.dz * seg.len * t;
                 const perp = Math.sqrt((x - px2) ** 2 + (z - pz2) ** 2);
-                if (perp < ROAD / 2 + 0.5) return false;  // FIX: was ROAD/2 - 0.5
+                if (perp < ROAD / 2 + 0.5) return false;
             }
             return true;
         }
-
-        // ── BILLBOARDS — placed outside city block grid ───────────────────────
-        const bbPositions = [
-            [ox + cityW * 0.3, oz - ROAD * 3],
-            [ox + cityW * 0.7, oz - ROAD * 3],
-            [ox - ROAD * 3, oz + cityD * 0.4],
-        ];
-        bbPositions.forEach(([bx, bz]) => addBillboard(scene, THREE, bx, bz, 5, 3));
 
         // ── CENTRAL MONUMENT ─────────────────────────────────────────────────
         const monP = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 14, 8), lampMat);
@@ -521,11 +567,7 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         monLight.position.y = 15;
         scene.add(monLight);
 
-        decoratePlaza(scene, THREE, 0, 0, 18, 0.2);
-
-        // FIX: Distance boards placed outside road carriageway
-        addDistanceBoard(scene, THREE, ROAD / 2 + 3, ROAD / 2 + 3, "GitCity HQ · 0.0 km");
-        addDistanceBoard(scene, THREE, -(ROAD / 2 + 3), ROAD / 2 + 3, "GitHub · ∞ km");
+        decoratePlaza(scene, THREE, 0, 0, 18, 0.2, isOnFootpath);
 
         // ── DISTRICTS & BUILDINGS ─────────────────────────────────────────────
         const blockInfos = [], buildingObjs = [], skyBeams = [];
@@ -542,60 +584,7 @@ export function CitySimulation({ cells, stats, theme, profile }) {
             sw.receiveShadow = true;
             scene.add(sw);
 
-            // ── REPO BOARD — on the sidewalk in front of the block ───────────
-            if (dist.total > 0) {
-                const boardX = bx0 + BW * 0.25;
-                // FIX: place board on the footpath strip at FURNITURE_OFFSET from road
-                // front of block is bz0; footpath is at bz0 - FURNITURE_OFFSET
-                const boardZ = bz0 - FURNITURE_OFFSET;
-
-                const boardMat = new THREE.MeshLambertMaterial({ color: 0x111122 });
-                const boardFace = new THREE.MeshLambertMaterial({ color: 0x001133 });
-                const glowMat = new THREE.MeshLambertMaterial({
-                    color: accentCol,
-                    emissive: accentCol.clone().multiplyScalar(0.9),
-                });
-
-                const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 5.5, 8), boardMat);
-                pole.position.set(boardX, 2.75, boardZ);
-                scene.add(pole);
-
-                const panel = new THREE.Mesh(new THREE.BoxGeometry(4.5, 2.2, 0.18), boardFace);
-                panel.position.set(boardX, 5.5, boardZ);
-                panel.castShadow = true;
-                scene.add(panel);
-
-                const topBar = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.18, 0.22), glowMat);
-                topBar.position.set(boardX, 6.65, boardZ);
-                scene.add(topBar);
-
-                const intensity = Math.min(1, dist.total / maxTotal);
-                const dotCount = Math.max(1, Math.round(intensity * 12));
-                const dotMat = new THREE.MeshLambertMaterial({
-                    color: accentCol,
-                    emissive: accentCol.clone().multiplyScalar(0.7),
-                });
-                for (let d = 0; d < 12; d++) {
-                    const dotLit = d < dotCount;
-                    const dm = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.28, 0.28, 0.1),
-                        dotLit ? dotMat : new THREE.MeshLambertMaterial({ color: 0x223344 })
-                    );
-                    dm.position.set(boardX - 2.0 + d * 0.34, 5.0, boardZ - 0.1);
-                    scene.add(dm);
-                }
-
-                const bLight = new THREE.PointLight(accentCol, 0.6, 12);
-                bLight.position.set(boardX, 5.5, boardZ - 0.5);
-                scene.add(bLight);
-
-                const labelMat = new THREE.MeshLambertMaterial({ color: 0xaabbcc, emissive: new THREE.Color(0.1, 0.15, 0.2) });
-                const lm = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.22, 0.08), labelMat);
-                lm.position.set(boardX, 6.1, boardZ - 0.08);
-                scene.add(lm);
-            }
-
-            // ── Street furniture — only on confirmed footpath points ──────────
+            // Street furniture on confirmed footpath points only
             const nearFP = footpathPoints.filter(p =>
                 Math.abs(p.x - (bx0 + BW / 2)) < BW * 0.8 &&
                 Math.abs(p.z - (bz0 + BD / 2)) < BD * 0.8 &&
@@ -603,18 +592,9 @@ export function CitySimulation({ cells, stats, theme, profile }) {
             );
 
             let fpIdx = 0;
-            if (rand() < 0.35 && nearFP[fpIdx]) {
-                const fp = nearFP[fpIdx++];
-                addBench(scene, THREE, fp.x, fp.z);
-            }
-            if (rand() < 0.22 && nearFP[fpIdx]) {
-                const fp = nearFP[fpIdx++];
-                addKiosk(scene, THREE, fp.x, fp.z);
-            }
-            if (rand() < 0.28 && nearFP[fpIdx]) {
-                const fp = nearFP[fpIdx++];
-                addGarden(scene, THREE, fp.x, fp.z, 0.75);
-            }
+            if (rand() < 0.35 && nearFP[fpIdx]) { const fp = nearFP[fpIdx++]; addBench(scene, THREE, fp.x, fp.z); }
+            if (rand() < 0.22 && nearFP[fpIdx]) { const fp = nearFP[fpIdx++]; addKiosk(scene, THREE, fp.x, fp.z); }
+            if (rand() < 0.28 && nearFP[fpIdx]) { const fp = nearFP[fpIdx++]; addGarden(scene, THREE, fp.x, fp.z, 0.75); }
 
             // ── Buildings ─────────────────────────────────────────────────────
             dist.cells.forEach((cell) => {
@@ -749,28 +729,117 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         );
 
         // ── TRAFFIC SYSTEM ────────────────────────────────────────────────────
-        const traffic = createTrafficSystem(scene, THREE, roadSegs, cityW, cityD);
+        // onCollision fires exactly once (inside checkCollisions) the moment the
+        // blast is triggered. We play crash.mp3 immediately and blast.mp3 3 s later.
+        const onCollision = () => {
+            const crash = crashAudioRef.current;
+            if (crash) { crash.currentTime = 0; crash.play().catch(() => { }); }
+
+            setTimeout(() => {
+                const blast = blastAudioRef.current;
+                if (blast) { blast.currentTime = 0; blast.play().catch(() => { }); }
+            }, 3000);
+        };
+
+        const traffic = createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onCollision);
         traffic.addCars(Math.min(districts.length, 30));
         trafficRef.current = traffic;
 
+        // ── WEATHER AUTO-SCHEDULER ────────────────────────────────────────────
+        // Sequence: clear → pre-storm (15s dust) → storm (60s rain) → mist (90s) → clear → repeat
+        // First cycle fires 30 s after boot. Next cycles: random 60–180 s gap.
+        // All timer IDs tracked in weatherTimersRef so cleanup cancels every one.
+
+        function scheduleTimer(fn, ms) {
+            const id = setTimeout(() => {
+                // Remove this id from the list once it fires
+                weatherTimersRef.current = weatherTimersRef.current.filter(x => x !== id);
+                fn();
+            }, ms);
+            weatherTimersRef.current.push(id);
+            return id;
+        }
+
+        function clearWeatherTimers() {
+            weatherTimersRef.current.forEach(id => clearTimeout(id));
+            weatherTimersRef.current = [];
+        }
+
+        function applyWeatherPhase(ph) {
+            weatherPhaseRef.current = ph;
+            const ws = weatherRef.current;
+            if (ws && ws.setPhase) ws.setPhase(ph);
+
+            // Audio: rain.mp3 doubles as wind sound at lower volume
+            const rain = rainAudioRef.current;
+            if (!rain) return;
+
+            if (ph === "pre-storm") {
+                // Soft rain sound mimics distant wind/dust
+                rain.volume = 0.12;
+                rain.play().catch(() => { });
+            } else if (ph === "storm") {
+                rain.volume = 0.4;
+                rain.play().catch(() => { });
+            } else if (ph === "mist") {
+                // Very soft rain ambience for misty atmosphere
+                rain.volume = 0.08;
+                rain.play().catch(() => { });
+            } else {
+                // clear
+                rain.pause();
+                rain.currentTime = 0;
+            }
+        }
+
+        function startStormCycle(delayMs) {
+            clearWeatherTimers();
+            // 1. Pre-storm dust after delay
+            scheduleTimer(() => {
+                applyWeatherPhase("pre-storm");
+                // 2. Full storm 15s later
+                scheduleTimer(() => {
+                    applyWeatherPhase("storm");
+                    // 3. Mist 60s later
+                    scheduleTimer(() => {
+                        applyWeatherPhase("mist");
+                        // 4. Clear 90s later, then random repeat
+                        scheduleTimer(() => {
+                            applyWeatherPhase("clear");
+                            const nextGap = (60 + Math.random() * 120) * 1000;
+                            startStormCycle(nextGap);
+                        }, 90000);
+                    }, 60000);
+                }, 15000);
+            }, delayMs);
+        }
+
+        // First cycle 30 s after simulation starts
+        startStormCycle(30000);
+
         // ── PLAYER CAR ────────────────────────────────────────────────────────
         const playerCar = buildVehicle(scene, THREE, "sedan", accentCol.getHex());
-        const startSeg = roadSegs[Math.floor(roadSegs.length / 2)];
+
+        const LANE_OFFSET = 1.8;
+        const spawnSeg = roadSegs.find(s =>
+            s.len > 30 && Math.abs(s.dz) < 0.15
+        ) || roadSegs[Math.floor(roadSegs.length / 2)];
+
+        const spawnT = 0.5;
+        const spawnCX = spawnSeg.x1 + spawnSeg.dx * spawnSeg.len * spawnT;
+        const spawnCZ = spawnSeg.z1 + spawnSeg.dz * spawnSeg.len * spawnT;
         playerCar.position.set(
-            startSeg.x1 + startSeg.dx * startSeg.len * 0.3,
+            spawnCX - spawnSeg.dz * LANE_OFFSET,
             0,
-            startSeg.z1 + startSeg.dz * startSeg.len * 0.3
+            spawnCZ + spawnSeg.dx * LANE_OFFSET
         );
-        playerCar.rotation.y = startSeg.angle + Math.PI;
+        playerCar.rotation.y = spawnSeg.angle;
         playerCarRef.current = playerCar;
 
         const PLAYER_HW = 1.1, PLAYER_HD = 2.2;
 
         // ── PARKED SPECIAL VEHICLES ───────────────────────────────────────────
-        // FIX: space vehicles well apart so they don't overlap each other
-        // Place on footpath / parking bay area (outside road carriageway)
-        // Use FURNITURE_OFFSET + small margin from road edge
-        const parkRow = oz + BD + ROAD * 2 + 1;  // safely outside road area
+        const parkRow = oz + BD + ROAD * 2 + 1;
 
         function parkVehicle(type, x, z, ry) {
             const v = buildVehicle(scene, THREE, type);
@@ -780,7 +849,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
             return v;
         }
 
-        // FIX: space parked vehicles 6+ units apart to prevent overlap
         const ambulance = parkVehicle("ambulance", ox + 4, parkRow, Math.PI / 4);
         const police = parkVehicle("police", ox + 12, parkRow, -Math.PI / 6);
         const schoolBus = parkVehicle("schoolbus", ox + 22, parkRow, 0);
@@ -832,32 +900,30 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         let lastT = performance.now(), prevNearest = null, hoverFr = 0;
         const camP = new THREE.Vector3(), camL = new THREE.Vector3(), orbitTgt = new THREE.Vector3();
         camP.set(playerCar.position.x + Math.sin(playerCar.rotation.y) * 16, 9, playerCar.position.z + Math.cos(playerCar.rotation.y) * 16);
-
         function animate() {
             frameRef.current = requestAnimationFrame(animate);
             const now = performance.now(), dt = Math.min((now - lastT) / 1000, 0.05);
             lastT = now;
 
             const keys = keysRef.current, m = mouseRef.current, car = playerCar;
-            const NM = nightRef.current;
 
-            // Sky & Lighting
-            const skyColor = NM ? 0x05091c : 0x87ceeb;
-            scene.background.set(skyColor);
-            scene.fog.color.set(skyColor);
-            renderer.toneMappingExposure = NM ? 1.6 : 2.0;
-            ambient.intensity = NM ? 0.4 : 0.9;
-            sun.intensity = NM ? 0.7 : 1.6;
-            sun.color.set(NM ? 0x2244aa : 0xfff4d0);
-            sun.position.set(NM ? -100 : 150, NM ? 60 : 220, NM ? -80 : 100);
-            hemi.intensity = NM ? 0.25 : 0.6;
-            hemi.color.set(NM ? 0x0a1428 : 0x88bbff);
-            stars.visible = NM; moonMesh.visible = NM; sunDisc.visible = !NM;
-            cloudGroup.visible = !NM; monLight.visible = NM;
-            gndMat.color.set(NM ? 0x090912 : 0x3a6a2a);
+            // Sky & Lighting — always night
+            scene.background.set(0x05091c);
+            scene.fog.color.set(0x05091c);
+            renderer.toneMappingExposure = 1.6;
+            ambient.intensity = 0.4;
+            sun.intensity = 0.7;
+            sun.color.set(0x2244aa);
+            sun.position.set(-100, 60, -80);
+            hemi.intensity = 0.25;
+            hemi.color.set(0x0a1428);
+            stars.visible = true; moonMesh.visible = true; sunDisc.visible = false;
+            cloudGroup.visible = false; monLight.visible = true;
+            gndMat.color.set(0x090912);
 
             weather.update(dt, now);
             emergencyVehicles.forEach(v => updateVehicleLights(v, dt, now));
+            updateSignageAnimations(animatedSigns, now);
 
             // Vehicle movement
             let spd = 0;
@@ -930,11 +996,36 @@ export function CitySimulation({ cells, stats, theme, profile }) {
             if (Math.sqrt(car.position.x ** 2 + car.position.z ** 2) < 15) locLabel = "City Center ✦";
             setLoc(locLabel);
 
-            traffic.update(dt); pedSystem.update(dt);
+            traffic.update(dt, camera);
+            pedSystem.update(dt);
+
+            // ── Sync traffic-signal visuals to live light states ──────────────
+            if (trafficSignals.length > 0) {
+                const tLights = traffic.getLights();
+                for (const sig of trafficSignals) {
+                    let nearest = null, bd = Infinity;
+                    for (const l of tLights) {
+                        const d = Math.hypot(l.inter.x - sig.userData.sigX, l.inter.z - sig.userData.sigZ);
+                        if (d < bd) { bd = d; nearest = l; }
+                    }
+                    if (!nearest || bd > 30) continue;
+                    const st = nearest.state;
+                    sig.children.forEach((child, ci) => {
+                        if (ci < 2) return;
+                        if (ci >= 5) return;
+                        const lightNames = ["red", "yellow", "green"];
+                        const on = (st === lightNames[ci - 2]);
+                        if (child.material && child.material.emissive) {
+                            const colors = [new THREE.Color(1, 0, 0), new THREE.Color(1, 1, 0), new THREE.Color(0, 1, 0)];
+                            child.material.emissive.copy(on ? colors[ci - 2] : new THREE.Color(0, 0, 0));
+                        }
+                    });
+                }
+            }
 
             finalBeams.forEach((sb) => {
                 if (sb.mesh) {
-                    sb.mesh.visible = NM;
+                    sb.mesh.visible = true; // always night
                     if (!sb.isVertical && sb.mesh.material.opacity !== undefined)
                         sb.mesh.material.opacity = 0.04 + Math.abs(Math.sin(now * 0.0008 + sb.off)) * 0.06;
                 }
@@ -977,6 +1068,8 @@ export function CitySimulation({ cells, stats, theme, profile }) {
 
         return () => {
             cancelAnimationFrame(frameRef.current);
+            weatherTimersRef.current.forEach(id => clearTimeout(id));
+            weatherTimersRef.current = [];
             weather.dispose(); pedSystem.dispose(); traffic.dispose();
             weatherRef.current = null; trafficRef.current = null; playerCarRef.current = null;
             canvas.removeEventListener("mousedown", onMD);
@@ -1106,27 +1199,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
                 )}
             </div>
 
-            {/* WEATHER + DAY/NIGHT + MUSIC */}
-            <div style={{ position: "absolute", bottom: "0.6rem", right: "0.6rem", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.35rem", zIndex: 10 }}>
-                <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap", justifyContent: "flex-end", maxWidth: 320 }}>
-                    {WEATHER_MODES.map(({ key, label }) => {
-                        const active = weatherMode === key;
-                        return (
-                            <button key={key} onClick={() => setWeatherMode(key)} style={{ background: active ? `${theme.accent}25` : `${theme.surface}cc`, border: `1px solid ${active ? theme.accent : theme.border}`, borderRadius: 5, padding: "0.25rem 0.5rem", cursor: "pointer", color: active ? theme.accent : theme.muted, fontSize: "0.55rem", fontFamily: "monospace", letterSpacing: "0.05em", fontWeight: active ? 700 : 400, transition: "all 0.15s", boxShadow: active ? `0 0 8px ${theme.glow}40` : "none" }}>
-                                {label}
-                            </button>
-                        );
-                    })}
-                </div>
-                <div style={{ display: "flex", gap: "0.35rem" }}>
-                    <button onClick={() => setMusicOn((m) => !m)} style={{ background: musicOn ? `${theme.accent}25` : `${theme.surface}cc`, border: `1px solid ${musicOn ? theme.accent : theme.border}`, borderRadius: 6, padding: "0.32rem 0.7rem", cursor: "pointer", color: musicOn ? theme.accent : theme.muted, fontSize: "0.58rem", fontFamily: "monospace", letterSpacing: "0.08em", transition: "all 0.15s" }}>
-                        {musicOn ? "🎵 Music On" : "🔇 Music Off"}
-                    </button>
-                    <button onClick={() => setNight((n) => !n)} style={{ background: `${theme.surface}cc`, border: `1px solid ${night ? theme.accent : theme.border}`, borderRadius: 6, padding: "0.32rem 0.7rem", cursor: "pointer", color: night ? theme.accent : theme.muted, fontSize: "0.58rem", fontFamily: "monospace", letterSpacing: "0.08em" }}>
-                        {night ? "☀ Day" : "☾ Night"}
-                    </button>
-                </div>
-            </div>
         </div>
     );
 }

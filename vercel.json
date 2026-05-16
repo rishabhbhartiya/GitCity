@@ -4,6 +4,14 @@
     "outputDirectory": "dist",
     "rewrites": [
         {
+            "source": "/story",
+            "destination": "/story.html"
+        },
+        {
+            "source": "/comparison",
+            "destination": "/comparison.html"
+        },
+        {
             "source": "/:username/simulation",
             "destination": "/index.html"
         },

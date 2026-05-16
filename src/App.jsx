@@ -303,8 +303,8 @@ function Backlink({ theme }) {
       rel="noreferrer"
       style={{
         position: "fixed",
-        bottom: "0.6rem",
-        right: "0.75rem",
+        bottom: "1.3rem",
+        left: "1.5rem",
         zIndex: 100,
         fontSize: "0.55rem",
         fontFamily: "'Courier New', monospace",
