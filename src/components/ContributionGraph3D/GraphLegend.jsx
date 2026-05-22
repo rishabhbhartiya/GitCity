@@ -1,9 +1,5 @@
 /**
  * GraphLegend.jsx
- * "Less ▢▢▢▢▢ More" colour scale legend shown below the graph.
- *
- * Props:
- *   theme  object  – active theme (uses theme.levels, theme.border, theme.muted, theme.glow)
  */
 
 export function GraphLegend({ theme }) {

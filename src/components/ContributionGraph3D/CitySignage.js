@@ -1,45 +1,10 @@
 /**
  * CitySignage.js — GitCity
- * Traffic signals, street signs, distance boards, info displays
- *
- * FIXES v2:
- * - All signs/signals placed via sidewalk-aware helpers (never on road)
- * - FURNITURE_OFFSET system respected for all placements
- * - Animated distance boards with scrolling text & pulse glow
- * - Animated info displays with blinking indicators
- * - Street light volumetric light-ray cones
- * - Intersection-corner signal placement helper
- * - Mid-block sign placement helper
- *
- * Usage:
- *   import {
- *     addTrafficSignal, addStreetSign, addDistanceBoard,
- *     addBillboard, addBusStop, addMailbox,
- *     placeSignalAtCorner, placeSignMidBlock,
- *     addLampWithRays, updateSignageAnimations
- *   } from "./CitySignage";
- *
- *   // In setup:
- *   const animatedSigns = [];
- *   placeSignalAtCorner(scene, THREE, ix, iz, ROAD, animatedSigns);
- *   placeSignMidBlock(scene, THREE, rx, rz, ROAD, "GitAve", "Code St", animatedSigns);
- *   addLampWithRays(scene, THREE, x, z);
- *
- *   // In animation loop:
- *   updateSignageAnimations(animatedSigns, now);
  */
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PLACEMENT CONSTANTS (must match CitySimulation.jsx)
-// ─────────────────────────────────────────────────────────────────────────────
 const ROAD = 9;
 const FOOTPATH_OFFSET = ROAD / 2 + 1.1;   // centre of footpath strip
 const FURNITURE_OFFSET = ROAD / 2 + 1.8;  // ideal furniture placement (outer edge)
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SMART PLACEMENT HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Place a traffic signal at an intersection corner — always on the sidewalk
@@ -81,12 +46,6 @@ export function placeSignalAtCorner(scene, THREE, ix, iz, roadW = ROAD, animated
  * @param {Array}  animatedSigns
  */
 export function placeSignMidBlock(scene, THREE, rx, rz, roadW = ROAD, street1 = "Main St", street2 = "GitHub Ave", animatedSigns = []) {
-    // FIX: FURNITURE_OFFSET already accounts for road_half + footpath width (6.3).
-    // Old value (roadW/2 + 2.0 = 6.5) only cleared the road edge by 0.5 — signs
-    // were landing on or inside the kerb. Now offset = FURNITURE_OFFSET + 1.0
-    // so signs sit clearly on the footpath outer strip.
-    // rx is already the road-centre X. FURNITURE_OFFSET is measured from road centre.
-    // So sign position = rx ± FURNITURE_OFFSET, no extra roadW/2 needed.
     const offset = FURNITURE_OFFSET;
     addStreetSign(scene, THREE, rx + offset, rz, street1, street2, animatedSigns);
     addStreetSign(scene, THREE, rx - offset, rz, street1, street2, animatedSigns);
@@ -106,18 +65,11 @@ export function placeDistanceBoardOnSidewalk(scene, THREE, nearX, nearZ, roadW =
     return addDistanceBoard(scene, THREE, nearX + offset, nearZ, text, animatedSigns);
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-// LAMP POST WITH VOLUMETRIC LIGHT RAYS
-// ─────────────────────────────────────────────────────────────────────────────
-
 /**
  * Replace the plain addLamp in CitySimulation — adds a volumetric cone ray
  * and a soft halo sprite around the bulb for a realistic street-light look.
  */
 export function addLampWithRays(scene, THREE, x, z, lampMat = null, armDirX = 0, armDirZ = -1) {
-    // armDirX, armDirZ: unit direction from pole toward road (e.g. 0,-1 means arm goes in -Z)
-    // Default: arm goes in -Z (works for lamps on +Z footpath side of horizontal road)
     const mat = lampMat || new THREE.MeshLambertMaterial({ color: 0xFFD8A8 });
     const ARM_LEN = 3.2;  // how far arm reaches toward road
 
@@ -126,7 +78,6 @@ export function addLampWithRays(scene, THREE, x, z, lampMat = null, armDirX = 0,
     pole.position.set(x, 3.5, z);
     pole.castShadow = true;
     scene.add(pole);
-
     // Arm — extends in (armDirX, armDirZ) direction toward road centre
     const armEndX = x + armDirX * ARM_LEN;
     const armEndZ = z + armDirZ * ARM_LEN;
@@ -175,9 +126,6 @@ export function addLampWithRays(scene, THREE, x, z, lampMat = null, armDirX = 0,
     pl.position.set(bx, by - 0.3, bz2);
     pl.castShadow = false;
     scene.add(pl);
-
-    // ── Volumetric cone (downward spotlight ray) ────────────────────────────
-    // ConeGeometry: tip at top (bulb), base wide at ground — flipped with rotation.x=PI
     const coneMat = new THREE.MeshBasicMaterial({
         color: 0xffeeaa,
         transparent: true,
@@ -185,10 +133,6 @@ export function addLampWithRays(scene, THREE, x, z, lampMat = null, armDirX = 0,
         side: THREE.DoubleSide,
         depthWrite: false,
     });
-    // ConeGeometry default: tip at +Y, base at -Y.
-    // We want tip at bulb (top) and base spreading on ground (bottom).
-    // No flip needed — default orientation is correct.
-    // Centre the cone so tip aligns with bulb: position.y = by - coneH/2
     const coneH = by;  // cone height = bulb height (tip at bulb, base at ground level)
     const coneR = 3.5; // base radius on ground
     const cone = new THREE.Mesh(
@@ -227,12 +171,6 @@ export function addLampWithRays(scene, THREE, x, z, lampMat = null, armDirX = 0,
 
     return { pole, arm, bulb, cone, halo, pool, pl };
 }
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ANIMATION UPDATE — call once per frame
-// ─────────────────────────────────────────────────────────────────────────────
-
 /**
  * updateSignageAnimations(animatedSigns, now)
  *
@@ -322,11 +260,6 @@ export function updateSignageAnimations(animatedSigns, now) {
     }
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TRAFFIC SIGNAL
-// ─────────────────────────────────────────────────────────────────────────────
-
 export function addTrafficSignal(scene, THREE, x, z, state = "red", animatedSigns = []) {
     const group = new THREE.Group();
 
@@ -385,11 +318,6 @@ export function addTrafficSignal(scene, THREE, x, z, state = "red", animatedSign
     return group;
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-// STREET SIGN
-// ─────────────────────────────────────────────────────────────────────────────
-
 export function addStreetSign(scene, THREE, x, z, street1 = "Main St", street2 = "GitHub Ave", animatedSigns = []) {
     const group = new THREE.Group();
 
@@ -431,11 +359,6 @@ export function addStreetSign(scene, THREE, x, z, street1 = "Main St", street2 =
 
     return group;
 }
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-// DISTANCE / INFO BOARD  — ANIMATED
-// ─────────────────────────────────────────────────────────────────────────────
 
 export function addDistanceBoard(scene, THREE, x, z, text = "GitHub · 5.2 km", animatedSigns = []) {
     const group = new THREE.Group();
@@ -537,11 +460,6 @@ export function addDistanceBoard(scene, THREE, x, z, text = "GitHub · 5.2 km", 
     return group;
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-// BUS STOP SHELTER
-// ─────────────────────────────────────────────────────────────────────────────
-
 export function addBusStop(scene, THREE, x, z, animatedSigns = []) {
     const group = new THREE.Group();
 
@@ -608,11 +526,6 @@ export function addBusStop(scene, THREE, x, z, animatedSigns = []) {
     return group;
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-// MAILBOX
-// ─────────────────────────────────────────────────────────────────────────────
-
 export function addMailbox(scene, THREE, x, z) {
     const group = new THREE.Group();
 
@@ -648,11 +561,6 @@ export function addMailbox(scene, THREE, x, z) {
     return group;
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-// BILLBOARD
-// ─────────────────────────────────────────────────────────────────────────────
-
 export function addBillboard(scene, THREE, x, z, width = 4, height = 2.5) {
     const group = new THREE.Group();
 
@@ -687,11 +595,6 @@ export function addBillboard(scene, THREE, x, z, width = 4, height = 2.5) {
     scene.add(group);
     return group;
 }
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-// REPO BOARD UTILITY
-// ─────────────────────────────────────────────────────────────────────────────
 
 export function addRepoBoard(scene, THREE, x, z, repoName = "gitcity", status = "active", animatedSigns = []) {
     const board = addDistanceBoard(scene, THREE, x, z, `${repoName.toUpperCase()}`, animatedSigns);

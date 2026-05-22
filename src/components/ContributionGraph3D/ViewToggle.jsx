@@ -1,6 +1,5 @@
 /**
  * ViewToggle.jsx
- * Toggle: 3D Skyline | Bird's Eye | City Simulation
  */
 
 export function ViewToggle({ view, onToggle, theme }) {

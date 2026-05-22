@@ -1,12 +1,8 @@
 /**
- * WeatherSystem.js — GitCity v7
- * Changes from v6:
- * - Removed spring (leaves) and snow entirely
- * - Storm is fully automatic — caller drives the phase via setPhase()
+ * WeatherSystem.js 
  */
 
 export function createWeatherSystem(scene, THREE, cityW = 200, cityD = 200) {
-    // phase: "clear" | "storm"
     let phase = "clear";
 
     // ── Storm particles ───────────────────────────────────────────────────────
@@ -205,10 +201,6 @@ export function createWeatherSystem(scene, THREE, cityW = 200, cityD = 200) {
     }
 
     // ── PUBLIC API ─────────────────────────────────────────────────────────────
-    /**
-     * setPhase("clear" | "storm")
-     * Called by CitySimulation's auto-scheduler — never by the user directly.
-     */
     function setPhase(newPhase) {
         if (newPhase === phase) return;
         phase = newPhase;

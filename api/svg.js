@@ -1,6 +1,5 @@
 /**
- * api/svg.js — Isometric 3D skyline SVG for README embeds
- * URL: /api/svg?u=USERNAME&theme=matrix
+ * api/svg.js 
  */
 
 const THEMES = {
@@ -39,7 +38,7 @@ function buildIsometricSVG(username, days, themeName) {
 
     // Isometric tile dimensions
     const TW = 12;   // tile width
-    const TH = 6;    // tile height (half of width for isometric)
+    const TH = 6;    // tile height
     const WEEKS = 53, DAYS = 7;
 
     // Group days into week columns
@@ -74,8 +73,6 @@ function buildIsometricSVG(username, days, themeName) {
             y: (col + row) * (TH / 2),
         };
     }
-
-    // Find bounds
     const corners = [
         iso(0, 0), iso(numWeeks - 1, 0),
         iso(0, DAYS - 1), iso(numWeeks - 1, DAYS - 1)
@@ -99,9 +96,6 @@ function buildIsometricSVG(username, days, themeName) {
         const r = count / maxC;
         return r < 0.25 ? 1 : r < 0.5 ? 2 : r < 0.75 ? 3 : 4;
     }
-
-    // Build buildings sorted back-to-front (painter's algorithm)
-    // Sort by col+row ascending so far tiles draw first
     const buildings = [];
     for (let wi = 0; wi < numWeeks; wi++) {
         for (let day = 0; day < DAYS; day++) {
@@ -112,12 +106,9 @@ function buildIsometricSVG(username, days, themeName) {
             buildings.push({ wi, day, count, lv, base, bH });
         }
     }
-    // Painter: sort by wi+day ascending
     buildings.sort((a, b) => (a.wi + a.day) - (b.wi + b.day) || (a.day - b.day));
 
     let shapes = "";
-
-    // Ground grid lines
     for (let wi = 0; wi <= numWeeks; wi += 4) {
         const p0 = iso(wi, 0), p1 = iso(wi, DAYS - 1);
         shapes += `<line x1="${OX + p0.x + TW / 2}" y1="${OY + p0.y + TH / 2}" x2="${OX + p1.x + TW / 2}" y2="${OY + p1.y + TH / 2}" stroke="${t.border}" stroke-width="0.5" opacity="0.6"/>`;

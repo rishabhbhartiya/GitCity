@@ -1,12 +1,5 @@
 /**
  * ThemePicker.jsx
- * Renders a row of labelled buttons to switch between graph themes.
- *
- * Props:
- *   themes        object   – the THEMES map from constants/themes.js
- *   activeTheme   string   – key of the currently active theme
- *   onSelect      fn(key)  – called when a theme button is clicked
- *   currentTheme  object   – resolved theme object for the active theme
  */
 
 export function ThemePicker({ themes, activeTheme, onSelect, currentTheme }) {

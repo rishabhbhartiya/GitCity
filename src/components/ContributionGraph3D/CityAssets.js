@@ -1,36 +1,8 @@
 /**
  * CityAssets.js — GitCity
- * Decorative city assets: benches, lamp posts, shops, gardens, playgrounds
- *
- * FIXES v2:
- * - All placement helpers now accept an explicit `roadW` parameter and push
- *   assets to FURNITURE_OFFSET (roadW/2 + 1.8) from the road centre.
- * - decoratePlaza now validates every candidate point with the caller-supplied
- *   isOnFootpath() guard before placing anything.
- * - New placeFurnitureAlongRoad() utility for batch sidewalk furniture.
- * - Asset functions themselves are unchanged (they position within the group).
- *
- * Usage:
- *   import {
- *     addBench, addGarden, addPlayground, addShop,
- *     addKiosk, addTrashBin, addPicnicTable,
- *     decoratePlaza, placeFurnitureAlongRoad
- *   } from "./CityAssets";
- *
- *   // Place individual items (always supply a confirmed sidewalk position):
- *   addBench(scene, THREE, sidewalkX, sidewalkZ);
- *   addGarden(scene, THREE, sidewalkX, sidewalkZ);
- *
- *   // Batch-place along a road segment (safe, checked internally):
- *   placeFurnitureAlongRoad(scene, THREE, x1, z1, x2, z2, roadW, isOnFootpath);
- *
- *   // Decorate a plaza (pass isOnFootpath validator from CitySimulation):
- *   decoratePlaza(scene, THREE, cx, cz, radius, density, isOnFootpath);
  */
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
-// These mirror the constants in CitySimulation.jsx.  They are only used by
-// the placement helpers; individual asset constructors don't need them.
 const DEFAULT_ROAD_W = 9;
 const FOOTPATH_OFFSET_FAC = 0.5 + 1.1 / DEFAULT_ROAD_W;   // ≈ road/2 + 1.1
 const FURNITURE_OFFSET = DEFAULT_ROAD_W / 2 + 1.8;      // 6.3 from road centre

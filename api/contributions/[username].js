@@ -1,9 +1,5 @@
 /**
  * /api/contributions/[username].js — GitCity
- *
- * Vercel serverless function — CommonJS format.
- * Fetches ALL years of contribution data for a GitHub user via GraphQL.
- * Uses GITHUB_TOKEN env variable — never exposed to the client.
  */
 
 const GITHUB_GRAPHQL = "https://api.github.com/graphql";
@@ -28,7 +24,6 @@ async function fetchJoinYear(username, token) {
 
 async function fetchYear(username, year, token) {
   const from = `${year}-01-01T00:00:00Z`;
-  // Cap `to` at today — GitHub rejects future dates
   const today = new Date();
   const isCurrentYear = year === today.getFullYear();
   const toDate = isCurrentYear

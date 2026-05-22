@@ -1,25 +1,11 @@
 /**
  * CityTraffic.js — GitCity v5 (Simulation-Grade)
- *
- * NEW IN v5:
- * - Proper intersection logic: STOP / YIELD / GO with priority rules
- * - Smooth acceleration/deceleration curves (IDM + S-curve easing)
- * - Safety-distance calculation (speed-adaptive headway)
- * - Multi-lane road system with proper lane assignment & lane-change signals
- * - Traffic light synchronization (green-wave offsets along road axis)
- * - Exhaust fume particles emitted from every vehicle
  */
 
 export function createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onCollision) {
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // CONSTANTS
-    // ─────────────────────────────────────────────────────────────────────────
     const LANE_OFFSET = 1.8;   // half-road-width lane separation
     const LANE_COUNT = 2;     // lanes per direction (1 = single, 2 = dual)
     const LANE_WIDTH = 1.9;   // width per lane
-
-    // IDM (Intelligent Driver Model) parameters
     const IDM_A = 2.8;   // max comfortable acceleration  m/s²
     const IDM_B = 5.5;   // comfortable braking           m/s²
     const IDM_T = 1.4;   // desired time headway          s
@@ -44,8 +30,6 @@ export function createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onColl
     const LIGHT_YELLOW = 2.2;
     const LIGHT_RED = 10.0;
     const CYCLE_LEN = LIGHT_GREEN + LIGHT_YELLOW + LIGHT_RED;
-
-    // Green-wave speed target (m/s) — offsets tuned so a car at this speed
     // hits each intersection on green
     const WAVE_SPEED = 10.0;
 
@@ -63,9 +47,6 @@ export function createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onColl
     const EXHAUST_LIFE = 1.8;   // puff lifetime seconds
     const EXHAUST_POOL = 400;   // max simultaneous puffs
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // STATE
-    // ─────────────────────────────────────────────────────────────────────────
     const traffic = [];
     const explosions = [];
     const lights = [];
@@ -82,10 +63,6 @@ export function createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onColl
     const exhaustPool = [];
     const exhaustActive = [];
     const exhaustGeo = new THREE.SphereGeometry(0.18, 4, 4);
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // MATERIALS
-    // ─────────────────────────────────────────────────────────────────────────
     const darkMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
     const trafficColors = [
         0xff3300, 0x0055ff, 0x33cc44, 0xffaa00, 0xcc22cc,
@@ -115,9 +92,6 @@ export function createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onColl
         if (idx >= 0) exhaustActive.splice(idx, 1);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // BUILD INTERSECTION TABLE
-    // ─────────────────────────────────────────────────────────────────────────
     const intersections = (function buildIntersections() {
         const pts = [];
         roadSegs.forEach((s, si) => {
@@ -144,21 +118,9 @@ export function createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onColl
         inter.mainAngle = bestAngle;
     });
 
-    // ─────────────────────────────────────────────────────────────────────────
     // TRAFFIC LIGHT SYSTEM — GREEN-WAVE SYNCHRONIZATION
-    //
-    //  Green-wave principle: offset each intersection's phase by
-    //  (distance_along_road / WAVE_SPEED) so a car travelling at WAVE_SPEED
-    //  always meets green lights.
-    //
-    //  Implementation: sort intersections along X-axis (dominant road axis),
-    //  compute cumulative distance, set phaseOffset = dist / WAVE_SPEED.
-    // ─────────────────────────────────────────────────────────────────────────
     (function assignGreenWaveOffsets() {
         // Build adjacency chains along axis-aligned road segments
-        // Simple heuristic: sort by X position for horizontal green waves,
-        //                   and by Z position for vertical green waves.
-        // Use two independent wave trains.
         const byX = [...intersections].sort((a, b) => a.x - b.x);
         let cumDistX = 0;
         for (let i = 0; i < byX.length; i++) {
@@ -209,9 +171,6 @@ export function createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onColl
         return bd < INTER_RADIUS * 2.5 ? { inter: best, dist: bd } : null;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // WORLD POSITION HELPERS
-    // ─────────────────────────────────────────────────────────────────────────
     function worldPos(v) {
         const s = roadSegs[v.segIdx];
         const t = Math.max(0, Math.min(1, v.t));
@@ -237,18 +196,14 @@ export function createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onColl
             z: s.z1 + s.dz * (s.len * t + rearOffset) + s.dx * (v.dir * laneOff + sideOff),
         };
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
     // SAFETY-DISTANCE: speed-adaptive following gap
     //   safetyDist(v) = s0 + v * T  (kinematic safe stopping gap)
-    // ─────────────────────────────────────────────────────────────────────────
     function safetyDist(v) {
         return IDM_S0 + Math.max(0, v.currentSpeed) * IDM_T;
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
+ 
+     
     // GAP TO LEADER — same-segment, same-lane, ahead only
-    // ─────────────────────────────────────────────────────────────────────────
     function gapToLeader(vehicle) {
         const myPos = worldPos(vehicle);
         let minGap = Infinity, leader = null;
@@ -272,16 +227,7 @@ export function createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onColl
         return { gap: minGap, leader };
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
     // INTERSECTION BEHAVIOR — STOP / YIELD / GO
-    //
-    //  Rules (priority order):
-    //  1. RED  → hard stop at stop line
-    //  2. YELLOW → decelerate, stop before intersection if not already past it
-    //  3. Conflicting vehicle inside intersection box → yield
-    //  4. Lower-priority road (fewer incoming segs) → yield if car on main road
-    //  5. Otherwise → GO
-    // ─────────────────────────────────────────────────────────────────────────
     function intersectionDecision(vehicle) {
         const seg = roadSegs[vehicle.segIdx];
         const tToEnd = vehicle.dir > 0 ? 1 - vehicle.t : vehicle.t;
@@ -345,12 +291,12 @@ export function createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onColl
         return { action: "go" };
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+     
     // IDM ACCELERATION — smooth S-curves via IDM formula
     //
     //  IDM: a = A * [1 - (v/v0)^δ - (s*(v,Δv)/s)^2]
     //  Returns signed acceleration m/s²
-    // ─────────────────────────────────────────────────────────────────────────
+     
     function calcAccel(v, gapData, interDecision) {
         const spd = v.currentSpeed;
         const v0 = v.maxSpeed;
@@ -387,15 +333,8 @@ export function createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onColl
         const interAcc = -Math.pow(sStar / Math.max(s, 0.01), 2);
         return IDM_A * (freeAcc + interAcc);
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
+     
     // LANE-CHANGE SYSTEM
-    //
-    //  A vehicle changes to an adjacent lane if:
-    //   a) Gap to leader < safetyDist and the adjacent lane has a larger gap
-    //   b) The adjacent lane exists (laneIdx 0 or 1 for LANE_COUNT=2)
-    //   c) Target lane has enough clearance (LC_SAFE_GAP) front & rear
-    // ─────────────────────────────────────────────────────────────────────────
     function tryLaneChange(vehicle) {
         if (vehicle.laneCD > 0) return false;
         if (vehicle.crashed) return false;
@@ -437,9 +376,7 @@ export function createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onColl
         return false;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // MOVE VEHICLE ON ROAD
-    // ─────────────────────────────────────────────────────────────────────────
+    // MOVE VEHICLE ON ROAD     
     function moveOnRoad(v, dt) {
         if (v.crashed) return;
         if (v.laneCD > 0) v.laneCD -= dt;
@@ -481,9 +418,8 @@ export function createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onColl
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // EXHAUST FUME PARTICLES
-    // ─────────────────────────────────────────────────────────────────────────
+     
+    // EXHAUST FUME PARTICLES  
     function emitExhaust(v) {
         const ep = exhaustPos(v);
         const mesh = getExhaustMesh();
@@ -531,9 +467,9 @@ export function createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onColl
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+     
     // EXPLOSION SYSTEM (unchanged structure, minor tuning)
-    // ─────────────────────────────────────────────────────────────────────────
+     
     function createHugeExplosion(x, z) {
         const exp = { x, z, age: 0, maxAge: MUSHROOM_DURATION, particles: [], mushroom: null, light: null, shockwave: null };
 
@@ -624,9 +560,9 @@ export function createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onColl
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+     
     // COLLISION DETECTION
-    // ─────────────────────────────────────────────────────────────────────────
+     
     function checkCollisions() {
         if (globalTime - lastCollisionTime < COLLISION_INTERVAL) return;
         if (activeEvent) return;
@@ -670,9 +606,9 @@ export function createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onColl
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+     
     // AMBULANCE
-    // ─────────────────────────────────────────────────────────────────────────
+     
     function initAmbulance() {
         const g = new THREE.Group();
         const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.2, 4.5),
@@ -710,9 +646,9 @@ export function createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onColl
         ambulance.mesh.rotation.y = Math.atan2(dx, dz);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+     
     // VEHICLE MESH BUILDERS
-    // ─────────────────────────────────────────────────────────────────────────
+     
     function buildCar(color) {
         const g = new THREE.Group(), mat = new THREE.MeshLambertMaterial({ color });
         const body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.52, 3.4), mat);
@@ -759,9 +695,9 @@ export function createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onColl
         scene.add(g); return g;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+     
     // PUBLIC API — addVehicle / addCars / update / dispose
-    // ─────────────────────────────────────────────────────────────────────────
+     
     function addVehicle(type = "car", color = null, segIdx = null, t = null, dir = null) {
         if (roadSegs.length === 0) return null;
 

@@ -1,6 +1,5 @@
 /**
  * Tooltip.jsx
- * Flips left/right and up/down based on available viewport space.
  */
 
 export function Tooltip({ cell, x, y, theme }) {

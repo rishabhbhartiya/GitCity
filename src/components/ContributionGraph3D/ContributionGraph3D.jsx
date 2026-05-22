@@ -1,6 +1,5 @@
 /**
  * ContributionGraph3D.jsx — GitCity
- * Four views: Isometric 3D | Bird's Eye | City Simulation 
  */
 
 import { useState, useMemo } from "react";

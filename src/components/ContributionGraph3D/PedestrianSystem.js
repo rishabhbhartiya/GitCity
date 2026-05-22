@@ -1,18 +1,9 @@
 /**
- * PedestrianSystem.js — GitCity v4 (fixed + enhanced)
- * FIX: Pedestrian speed reduced from 1.8–3.2 to 0.8–1.4
- * NEW: Crosswalk zones at intersections
- * NEW: Pedestrians wait at crosswalks for traffic lights
- * NEW: Crowd avoidance (pedestrians don't overlap)
- * NEW: Speed variation based on crowd density
- * NEW: Wind-animated trees — branches + fronds sway
- * NEW: Typed pedestrians — man, woman, child, elder, runner, tourist
- * Pedestrians walk ONLY on footpath strips alongside roads.
+ * PedestrianSystem.js 
  */
 
 // ── Global tree animation registry ───────────────────────────────────────────
-// addTree pushes swayable node descriptors here; call updateTrees(elapsed) each frame.
-export const _treeAnimNodes = []; // { mesh, axis, base, amp, freq, phase }
+export const _treeAnimNodes = []; 
 
 export function updateTrees(elapsed) {
     for (const n of _treeAnimNodes) {
@@ -21,8 +12,6 @@ export function updateTrees(elapsed) {
 }
 
 // ── Tree builder ──────────────────────────────────────────────────────────────
-// Returns the root Group. All wind-swayable nodes are pushed into _treeAnimNodes
-// so updateTrees(elapsed) can animate them every frame without extra bookkeeping.
 export function addTree(scene, THREE, x, z, type = "oak", scale = 1) {
     const g = new THREE.Group();
     const phase = Math.random() * Math.PI * 2; // unique wind phase per tree

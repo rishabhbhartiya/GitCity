@@ -1,7 +1,5 @@
 /**
  * useMousePosition.js
- * Tracks the global mouse position so tooltips can follow the cursor.
- * Returns { x, y } in viewport coordinates.
  */
 
 import { useState, useEffect, useCallback } from "react";

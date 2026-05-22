@@ -1,8 +1,5 @@
 /**
  * useMountAnimation.js
- * Returns a boolean `mounted` that flips to true after a short delay.
- * Re-fires whenever `key` changes (e.g. on theme switch) so buildings
- * re-animate from the bottom.
  */
 
 import { useState, useEffect } from "react";

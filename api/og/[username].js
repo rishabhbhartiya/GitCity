@@ -1,15 +1,5 @@
 /**
  * /api/og/[username].js
- *
- * Returns an SVG contribution heatmap for README embedding.
- * Uses public GitHub contributions API — no token needed.
- * Falls back to GitHub GraphQL if GITHUB_TOKEN is set.
- *
- * Routes:
- *   GET /rishabhbhartiya.svg          → default matrix theme
- *   GET /rishabhbhartiya.svg?theme=noir
- *   GET /api/og/rishabhbhartiya
- *   GET /api/og/rishabhbhartiya?theme=aurora
  */
 
 const THEMES = {
@@ -27,7 +17,6 @@ async function fetchViaProxy(username) {
     const res = await fetch(url, { headers: { "User-Agent": "GitCity-OG/1.0" } });
     if (!res.ok) throw new Error(`Proxy returned ${res.status}`);
     const json = await res.json();
-    // Response: { contributions: [{ date, count }], total: { ... } }
     const contributions = json.contributions;
     if (!Array.isArray(contributions) || contributions.length === 0) {
         throw new Error("No contributions from proxy");
@@ -92,8 +81,6 @@ function buildSVG(username, data, themeName) {
 
     const CELL = 11, GAP = 2, ROWS = 7;
     const PAD_X = 14, PAD_Y = 44;
-
-    // Group into week columns
     const weeks = [];
     let week = new Array(7).fill(null);
     days.forEach(d => {
@@ -187,9 +174,6 @@ export default async function handler(req, res) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     if (req.method === "OPTIONS") return res.status(200).end();
-
-    // Parse username from query param (set by Vercel from [username].js)
-    // or fall back to URL path parsing
     let username = (req.query.username || "").trim();
     if (!username) {
         const parts = (req.url || "").split("?")[0].split("/").filter(Boolean);
@@ -198,8 +182,6 @@ export default async function handler(req, res) {
     username = decodeURIComponent(username).replace(/\.svg$/i, "").trim();
 
     const theme = (req.query.theme || "matrix").trim().toLowerCase();
-
-    // Validate username format
     if (!username || !/^[a-zA-Z0-9][a-zA-Z0-9-]{0,38}$/.test(username)) {
         res.setHeader("Content-Type", "image/svg+xml");
         return res.status(400).send(errorSVG(`Invalid username: "${username}"`));
@@ -207,12 +189,9 @@ export default async function handler(req, res) {
 
     try {
         let data;
-
-        // Try public proxy first (no token needed — always works)
         try {
             data = await fetchViaProxy(username);
         } catch (proxyErr) {
-            // Fall back to GitHub GraphQL if token available
             const token = process.env.GITHUB_TOKEN;
             if (!token) throw new Error(`Could not fetch contributions for "${username}". Try again later.`);
             data = await fetchViaGraphQL(username, token);

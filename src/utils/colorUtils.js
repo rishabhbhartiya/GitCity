@@ -1,6 +1,5 @@
 /**
  * colorUtils.js
- * Pure helper functions for colour manipulation used throughout the graph.
  */
 
 /**

@@ -1,10 +1,5 @@
 /**
  * useDragRotation.js
- * Handles mouse/touch drag to rotate a 3D scene.
- * Returns { rotX, rotY, isDragging, handlers }
- *
- * rotX: tilt up/down (pitch), rotY: spin left/right (yaw)
- * Attach `handlers` to the container element.
  */
 
 import { useState, useRef, useCallback } from "react";
@@ -100,5 +95,3 @@ export function useDragRotation({
     },
   };
 }
-
-// already written above

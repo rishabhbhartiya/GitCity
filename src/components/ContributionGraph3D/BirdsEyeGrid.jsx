@@ -1,11 +1,5 @@
 /**
  * BirdsEyeGrid.jsx
- * Top-down (bird's-eye) view of the contribution grid.
- * Classic GitHub-style heatmap but with height encoded as both colour AND
- * a subtle inner-glow / border to preserve the 3D feel.
- *
- * Props: same interface as IsometricGrid so ContributionGraph3D can
- * swap between them with a single flag.
  */
 
 import { adjustBrightness } from "../../utils/colorUtils";
@@ -90,7 +84,7 @@ export function BirdsEyeGrid({
           const idx   = week * 7 + day;
           const delay = mounted ? `${idx * 0.8}ms` : "0ms";
 
-          // Height as bar inside the cell (visual indicator even in top-down)
+          // Height as bar inside the cell 
           const heightPct = count === 0 ? 0 : 0.15 + (count / Math.max(stats.maxCount, 1)) * 0.7;
           const barH = S * heightPct;
 

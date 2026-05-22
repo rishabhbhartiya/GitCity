@@ -1,18 +1,5 @@
 /**
  * useGitHubData.js
- *
- * Fetches contribution data from our own serverless API first,
- * then falls back to third-party proxies if needed.
- * Also fetches repo metadata for Neighborhood view.
- *
- * Priority:
- *  1. /api/contributions/{username}  — our own Vercel function (all years)
- *  2. github-contributions-api.jogruber.de — public proxy (last year only)
- *  3. github-contributions.vercel.app — secondary public proxy
- *
- * Repos:
- *  - GitHub public API /users/:username/repos
- *  - Activity score = recency + stars (proxy for commit intensity)
  */
 
 import { useState, useCallback } from "react";

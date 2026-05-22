@@ -1,10 +1,5 @@
 /**
- * graph.js — layout constants
- *
- * These are the INTERNAL SVG coordinate units.
- * The SVG viewBox is fixed; the rendered size is controlled by
- * the container CSS (width: 100%, height: auto) — so the graph
- * always scales to fit whatever space it's given.
+ * graph.js
  */
 
 // Tile (rhombus footprint of each day cell)

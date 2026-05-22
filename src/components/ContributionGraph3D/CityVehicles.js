@@ -1,11 +1,5 @@
 /**
- * CityVehicles.js — GitCity v1
- * Detailed vehicle builders for the city simulation.
- * Vehicle types: sedan, suv, sportscar, bus, schoolbus, ambulance, taxi, police, truck
- *
- * Usage:
- *   import { buildVehicle, VEHICLE_TYPES } from "./CityVehicles";
- *   const car = buildVehicle(scene, THREE, "ambulance", accentColor);
+ * CityVehicles.js
  */
 
 // ── SHARED HELPERS ────────────────────────────────────────────────────────────

@@ -1,29 +1,5 @@
 /**
  * Building.jsx
- *
- * Origin (0,0) = TOP vertex of the rhombus top-face.
- * The shaft grows DOWNWARD from the rhombus.
- *
- * Rhombus corners (local coords):
- *   T = (0,      0)         ← origin / top vertex
- *   L = (-TW/2,  TH/2)     ← left vertex
- *   B = (0,      TH)        ← bottom vertex
- *   R = (+TW/2,  TH/2)     ← right vertex
- *
- * Shaft bottom edges (H px below rhombus):
- *   LB = (-TW/2,  TH/2 + H)
- *   BB = (0,      TH   + H)
- *   RB = (+TW/2,  TH/2 + H)
- *
- * Face geometry:
- *   Left  face: L → B → BB → LB   (parallelogram)
- *   Right face: R → B → BB → RB   (parallelogram)
- *   Top   face: T → R → B  → L    (rhombus)
- *
- * Window placement (isometric-correct):
- *   Left face runs from x = Lx (= -TW/2) to x = Bx (= 0)  → width = TW/2
- *   Right face runs from x = Bx (= 0)    to x = Rx (= TW/2) → width = TW/2
- *   Windows are horizontally centred within each face column.
  */
 
 import { useMemo } from "react";

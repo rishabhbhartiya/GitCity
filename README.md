@@ -1,9 +1,11 @@
 <div align="center">
 
-![Header](https://readmeforge.natrajx.in/api/header?name=GITCITY&title=Your+GitHub+contribution+history+%E2%80%94+reimagined+as+a+living+3D+city&tagline=&metal=vintage-green&style=cyber&height=215&theme=dark)
+<img src="./screenshots/gitcity.svg" alt="GitCity" width="90%" />
+
+<br/><br/>
 
 <a href="https://gitcity.natrajx.in">
-  <img src="./screenshots/3dcity.gif" alt="GitCity — GitHub Contributions as a 3D City Skyline" width="90%" />
+  <img src="./screenshots/login.gif" alt="GitCity — Login and City Generation" width="90%" />
 </a>
 
 <br/>
@@ -14,39 +16,76 @@
 
 </div>
 
-<p align="center">
-  <img src="https://readmeforge.natrajx.in/api/text-anim?text=See+it+live-+Your+Skyline+in+one+Line&effect=explode&metal=material-green&width=597&size=32&theme=dark" />
-</p>
+---
 
-Drop this into any GitHub README, portfolio, or blog post:
+## Instant Preview — No Login Needed
 
-```markdown
-[![My GitCity Skyline](https://gitcity.natrajx.in/api/svg?u=YOUR_USERNAME)](https://gitcity.natrajx.in/YOUR_USERNAME)
+Share anyone's city directly. Three views, one link:
+
+```
+https://gitcity.natrajx.in/{username}/isometric     <-  3D skyline
+https://gitcity.natrajx.in/{username}/heatmap        <-  bird's eye view
+https://gitcity.natrajx.in/{username}/simulation     <-  driveable city
 ```
 
-<p align="center">
-  <img 
-    src="https://readmeforge.natrajx.in/api/text-anim?text=Every+building+%3D+one+day+of+commits.+The+taller+the+tower%2C+the+more+you+shipped.&effect=typewriter&metal=material-green&width=896&size=21&theme=dark"
-    alt="Every building = one day of commits. The taller the tower, the more you shipped."
-    width="1000"
-  />
-</p>
-
-<p align="center">
-  <a href="https://gitcity.natrajx.in/rishabhbhartiya">
-    <img 
-      src="https://gitcity.natrajx.in/api/svg?u=rishabhbhartiya"
-      alt="GitCity Skyline"
-      width="1000"
-    />
-  </a>
-</p>
+| Username | Isometric | Heatmap | Simulation |
+|----------|-----------|---------|------------|
+| **@gaearon** | [skyline](https://gitcity.natrajx.in/gaearon/isometric) | [heatmap](https://gitcity.natrajx.in/gaearon/heatmap) | [drive](https://gitcity.natrajx.in/gaearon/simulation) |
+| **@torvalds** | [skyline](https://gitcity.natrajx.in/torvalds/isometric) | [heatmap](https://gitcity.natrajx.in/torvalds/heatmap) | [drive](https://gitcity.natrajx.in/torvalds/simulation) |
+| **@sindresorhus** | [skyline](https://gitcity.natrajx.in/sindresorhus/isometric) | [heatmap](https://gitcity.natrajx.in/sindresorhus/heatmap) | [drive](https://gitcity.natrajx.in/sindresorhus/simulation) |
 
 ---
 
-## ✨ What is GitCity?
+## Three Views of Your City
 
-GitCity fetches your **entire GitHub contribution history** via the GitHub GraphQL API and renders it as:
+<p align="center">
+  <img src="./screenshots/isometric.gif" alt="Isometric 3D Skyline" width="90%" />
+</p>
+
+<p align="center">
+  <img src="./screenshots/birdeye.gif" alt="Bird's Eye Heatmap View" width="90%" />
+</p>
+
+```
+  ISOMETRIC                  HEATMAP                  SIMULATION
+  3D skyline built           Bird's-eye grid of       Driveable city powered
+  from your commit           contribution density.    by Three.js. Your
+  streaks. Taller =          Spot your hottest        commits become
+  more commits.              coding months.           real streets.
+```
+
+---
+
+## Simulation Mode — Crash Physics
+
+The city simulation isn't just a drive-around. It has consequences.
+
+```
+  CRASH DETECTION
+  When your vehicle collides with a building or another object,
+  an explosion triggers at the impact zone.
+
+  SPEED-RESTRICTED ZONES
+  The crash site becomes a permanent hazard zone.
+  You cannot exceed 15 km/h within the blast radius.
+  Zone markers appear on the minimap.
+
+  EXPLOSION RESIDUE
+  Charred geometry stays on the road.
+  Drive through it and your handling degrades temporarily.
+
+  ZONE STACKING
+  Multiple crashes create overlapping restriction zones.
+  Reckless driving turns your city into a no-go labyrinth.
+```
+
+> Your commit history literally shapes how dangerous your city is to drive through.
+
+---
+
+## What is GitCity?
+
+GitCity fetches your **entire GitHub contribution history** via the GitHub GraphQL API and renders it as an interactive 3D city — no token required, no login, no paywall.
 
 <p align="center">
   <img src="https://readmeforge.natrajx.in/api/card-glass?title=&value=3D+SKYLINE&subtitle=&icon=%F0%9F%8F%99&glassTheme=dark&metal=electric&width=300&height=141" width="300" style="margin:10px;" />
@@ -54,48 +93,49 @@ GitCity fetches your **entire GitHub contribution history** via the GitHub Graph
   <img src="https://readmeforge.natrajx.in/api/card-glass?title=&value=BIRD%27S+EYE&subtitle=&icon=%F0%9F%A7%A9&glassTheme=dark&metal=electric&width=300&height=141" width="300" style="margin:10px;" />
 </p>
 
-No personal access token required. Enter your username and go.
-
-<a href="https://gitcity.natrajx.in">
-  <img src="./screenshots/cardriving.gif" alt="GitCity — GitHub Contributions as a 3D City Skyline" width="90%" />
-</a>
-
 ---
 
-## 🎨 Themes
+## Themes
 
-Six handcrafted themes — switch instantly:
+Six handcrafted themes — switch instantly via URL param:
 
-| Theme | Preview |
-|-------|---------|
-| **Matrix** | [![matrix](https://img.shields.io/badge/Matrix-00ff41?style=flat-square&labelColor=060d06)](https://gitcity.natrajx.in/rishabhbhartiya?theme=matrix) |
-| **Noir** | [![noir](https://img.shields.io/badge/Noir-00d4ff?style=flat-square&labelColor=04080f)](https://gitcity.natrajx.in/rishabhbhartiya?theme=noir) |
-| **Aurora** | [![aurora](https://img.shields.io/badge/Aurora-a855f7?style=flat-square&labelColor=030710)](https://gitcity.natrajx.in/rishabhbhartiya?theme=aurora) |
-| **Ocean** | [![ocean](https://img.shields.io/badge/Ocean-00b4d8?style=flat-square&labelColor=020c14)](https://gitcity.natrajx.in/rishabhbhartiya?theme=ocean) |
-| **Gold** | [![gold](https://img.shields.io/badge/Gold-ffd700?style=flat-square&labelColor=0c0900)](https://gitcity.natrajx.in/rishabhbhartiya?theme=gold) |
-| **Ice** | [![ice](https://img.shields.io/badge/Ice-a8c8ff?style=flat-square&labelColor=060810)](https://gitcity.natrajx.in/rishabhbhartiya?theme=ice) |
+| Theme | Preview | Direct Link |
+|-------|---------|-------------|
+| **Matrix** | ![matrix](https://img.shields.io/badge/■■■■■-00ff41?style=flat-square&labelColor=060d06) | `?theme=matrix` |
+| **Noir** | ![noir](https://img.shields.io/badge/■■■■■-00d4ff?style=flat-square&labelColor=04080f) | `?theme=noir` |
+| **Aurora** | ![aurora](https://img.shields.io/badge/■■■■■-a855f7?style=flat-square&labelColor=030710) | `?theme=aurora` |
+| **Ocean** | ![ocean](https://img.shields.io/badge/■■■■■-00b4d8?style=flat-square&labelColor=020c14) | `?theme=ocean` |
+| **Gold** | ![gold](https://img.shields.io/badge/■■■■■-ffd700?style=flat-square&labelColor=0c0900) | `?theme=gold` |
+| **Ice** | ![ice](https://img.shields.io/badge/■■■■■-a8c8ff?style=flat-square&labelColor=060810) | `?theme=ice` |
 
----
-
-## 🔗 Embed API
-
-The SVG embed API is **dynamic** — it re-renders from live GitHub data on each request.
-
-### Basic embed
-
-```markdown
-![GitCity](https://gitcity.natrajx.in/api/svg?u=YOUR_USERNAME)
+```
+https://gitcity.natrajx.in/torvalds/isometric?theme=matrix
+https://gitcity.natrajx.in/gaearon/simulation?theme=noir
 ```
 
-### With theme
+---
+
+## Embed API
+
+Drop a live, always-updated skyline anywhere — README, portfolio, blog post.
+
+<p align="center">
+  <img src="https://readmeforge.natrajx.in/api/text-anim?text=See+it+live-+Your+Skyline+in+one+Line&effect=explode&metal=material-green&width=597&size=32&theme=dark" />
+</p>
+
+```markdown
+[![My GitCity Skyline](https://gitcity.natrajx.in/api/svg?u=YOUR_USERNAME)](https://gitcity.natrajx.in/YOUR_USERNAME)
+```
+
+**With theme**
 
 ```markdown
 ![GitCity Noir](https://gitcity.natrajx.in/api/svg?u=YOUR_USERNAME&theme=noir)
 ```
 
-Available themes: `matrix` · `noir` · `aurora` · `ocean` · `gold` · `ice`
+Available: `matrix` · `noir` · `aurora` · `ocean` · `gold` · `ice`
 
-### HTML (full control)
+**HTML — full control**
 
 ```html
 <a href="https://gitcity.natrajx.in/YOUR_USERNAME">
@@ -104,11 +144,11 @@ Available themes: `matrix` · `noir` · `aurora` · `ocean` · `gold` · `ice`
 </a>
 ```
 
-### iframe (interactive, for portfolios)
+**iframe — interactive, for portfolios**
 
 ```html
 <iframe
-  src="https://gitcity.natrajx.in/YOUR_USERNAME"
+  src="https://gitcity.natrajx.in/YOUR_USERNAME/isometric"
   width="100%" height="500"
   frameborder="0"
   title="GitHub Contribution Skyline">
@@ -117,13 +157,17 @@ Available themes: `matrix` · `noir` · `aurora` · `ocean` · `gold` · `ice`
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
-### Option A — Use the hosted version (recommended)
+**Option A — Hosted (recommended)**
 
-Just go to **[gitcity.natrajx.in/YOUR_USERNAME](https://gitcity.natrajx.in)** — no setup needed.
+```
+https://gitcity.natrajx.in/YOUR_USERNAME
+```
 
-### Option B — Self-host
+No setup. No token. No account.
+
+**Option B — Self-host**
 
 ```bash
 # 1. Clone
@@ -133,102 +177,151 @@ cd gitcity
 # 2. Install
 npm install
 
-# 3. Set your GitHub token (for API calls)
+# 3. Set your GitHub token
 echo "GITHUB_TOKEN=ghp_your_token_here" > .env.local
 
 # 4. Run locally
-vercel dev          # uses /api serverless functions
+vercel dev          # with /api serverless functions
 # OR
-npm run dev         # Vite only (no API — use hosted API instead)
+npm run dev         # Vite only (uses hosted API)
 
-# 5. Deploy to Vercel
+# 5. Deploy
 vercel --prod
 ```
 
-### Environment variables
+**Environment variables**
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `GITHUB_TOKEN` | Yes | GitHub Personal Access Token (read:user scope) |
-
-![GITHUB_TOKEN](https://readmeforge.natrajx.in/api/card-glass?title=GITHUB_TOKEN&value=%E2%9C%93&subtitle=GitHub+Personal+Access+Token+&icon=%E2%97%88&glassTheme=dark&metal=electric&width=220&height=170)
+| `GITHUB_TOKEN` | Yes | GitHub PAT with `read:user` scope |
 
 ---
 
-## 🤖 SEO & AI Optimisation
+## SEO & AI Optimisation
 
-Three files live in `public/` and are served directly from the site root:
+Three files in `public/` are served directly from the site root:
 
 | File | URL | Purpose |
 |------|-----|---------|
-| `public/robots.txt` | `/robots.txt` | Search crawler rules, AI bot allowlist, sitemap pointer |
-| `public/sitemap.xml` | `/sitemap.xml` | Pages for Google to index |
-| `public/llms.txt` | `/llms.txt` | Machine-readable summary for AI assistants (ChatGPT, Claude, Perplexity) |
-
-**Why `public/`?** Vite copies everything in `public/` verbatim into `dist/` at build time, so these files are served at the bare URL with no routing involved — exactly what crawlers and search engines expect.
+| `robots.txt` | `/robots.txt` | Crawler rules, AI bot allowlist, sitemap pointer |
+| `sitemap.xml` | `/sitemap.xml` | Pages for Google to index |
+| `llms.txt` | `/llms.txt` | Machine-readable summary for ChatGPT, Claude, Perplexity |
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
-gitcity/
-├── public/                           # ← Static files served at site root
-│   ├── robots.txt                    #   gitcity.natrajx.in/robots.txt
-│   ├── sitemap.xml                   #   gitcity.natrajx.in/sitemap.xml
-│   └── llms.txt                      #   gitcity.natrajx.in/llms.txt
+GitCity/
 ├── api/
-│   ├── contributions/[username].js   # Serverless: GitHub GraphQL proxy
-│   └── og/[username].js              # Serverless: SVG generator for embeds
-├── index.html                        # Root HTML with SEO/OG meta
+│   ├── contributions/
+│   │   └── [username].js          # GitHub GraphQL proxy
+│   ├── og/
+│   │   └── [username].js          # OG image generator
+│   └── svg.js                     # SVG embed endpoint
+├── public/
+│   ├── blast.mp3                  # Explosion sound
+│   ├── crash.mp3                  # Crash sound
+│   ├── music.mp3                  # Ambient city music
+│   ├── rain.mp3                   # Weather ambience
+│   ├── wind.mp3                   # Weather ambience
+│   ├── comparison.html            # gitcity.natrajx.in/comparison
+│   ├── story.html                 # gitcity.natrajx.in/story
+│   ├── llms.txt
+│   ├── robots.txt
+│   ├── sitemap.xml
+│   └── screenshots/
+│       ├── banner.png
+│       └── twitter-banner.png
+├── screenshots/
+│   ├── birdeye.gif
+│   ├── cardriving.gif
+│   ├── gitcity.svg                # Banner SVG (used in README)
+│   ├── isometric.gif
+│   └── login.gif
 ├── src/
-│   ├── App.jsx                       # Auth flow, URL params
-│   ├── components/ContributionGraph3D/
-│   │   ├── ContributionGraph3D.jsx   # Main graph component + filters
-│   │   ├── IsometricGrid.jsx         # SVG isometric 3D skyline
-│   │   ├── CitySimulation.jsx        # Three.js driveable city
-│   │   ├── BirdsEyeGrid.jsx          # Heatmap view
-│   │   └── Building.jsx              # Individual isometric building
+│   ├── App.jsx                    # Auth flow, URL params, view routing
+│   ├── main.jsx
+│   ├── components/
+│   │   └── ContributionGraph3D/
+│   │       ├── index.js
+│   │       ├── ContributionGraph3D.jsx
+│   │       ├── IsometricGrid.jsx
+│   │       ├── Citysimulation.jsx  # Three.js city + crash physics
+│   │       ├── BirdsEyeGrid.jsx
+│   │       ├── Building.jsx
+│   │       ├── CityAssets.js
+│   │       ├── CitySignage.js
+│   │       ├── CityTraffic.js
+│   │       ├── CityVehicles.js
+│   │       ├── GitHubConnect.jsx
+│   │       ├── GraphLegend.jsx
+│   │       ├── PedestrianSystem.js
+│   │       ├── StatsBar.jsx
+│   │       ├── ThemePicker.jsx
+│   │       ├── Tooltip.jsx
+│   │       ├── ViewToggle.jsx
+│   │       ├── WeatherSystem.js
+│   │       └── useDragRotation.js
 │   ├── constants/
-│   │   └── themes.js                 # 6 colour themes
-│   └── hooks/
-│       └── useGitHubData.js          # Data fetching hook
-├── vercel.json                       # Routing rules
-└── vite.config.js
+│   │   ├── graph.js
+│   │   └── themes.js              # 6 colour themes
+│   ├── hooks/
+│   │   ├── useContributionData.js
+│   │   ├── useGitHubData.js
+│   │   ├── useMountAnimation.js
+│   │   └── useMousePosition.js
+│   └── utils/
+│       ├── colorUtils.js
+│       └── dataUtils.js
+├── index.html
+├── vercel.json
+├── vite.config.js
+├── package.json
+├── CHANGELOG.md
+├── COMPARISON.md
+├── CONTRIBUTING.md
+├── SECURITY.md
+├── CODE_OF_CONDUCT.md
+├── ACKNOWLEDGEMENTS.md
+├── CASE_STUDY.md
+├── HISTORY.md
+└── LICENSE
 ```
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-- **[React 18](https://react.dev)** — UI
-- **[Vite 5](https://vitejs.dev)** — build
-- **[Three.js r128](https://threejs.org)** — city simulation (WebGL)
-- **SVG** — isometric skyline (pure, embeddable)
-- **[GitHub GraphQL API](https://docs.github.com/en/graphql)** — contribution data
-- **[Vercel](https://vercel.com)** — hosting + serverless
+| Layer | Tech |
+|-------|------|
+| UI | React 18 |
+| Build | Vite 5 |
+| 3D / Physics | Three.js r128 |
+| Skyline | Pure SVG (embeddable) |
+| Data | GitHub GraphQL API |
+| Hosting | Vercel + Serverless |
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 PRs welcome. Open an issue first for major changes.
 
 ```bash
 git checkout -b feat/your-feature
-# make changes
 git commit -m "feat: your feature"
 git push origin feat/your-feature
-# open PR → main
+# open PR -> main
 ```
 
 ---
 
-## ☕ Support
+## Support
 
-GitCity is free and open-source — no login, no paywall, no token required.
+GitCity is free and open-source — no login, no paywall, no token required for the hosted version.
 
-If it made your README cooler or your portfolio stand out, consider buying me a coffee. It goes directly toward hosting costs, GPU time for experiments, and building more free tools like this one.
+If it made your README cooler or your portfolio stand out, consider a coffee. It goes toward hosting, GPU time, and building more free tools.
 
 <a href="https://ko-fi.com/rishabhbhartiya">
   <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support on Ko-fi" />
@@ -236,43 +329,43 @@ If it made your README cooler or your portfolio stand out, consider buying me a 
 
 ---
 
-## 🙋 About the Author
-
-Built by **[Rishabh Bhartiya](https://rishabhbhartiya.natrajx.in)** — ML Engineer & full-stack developer. 3 years turning research-grade ideas into production systems at scale.
-
-- 🌐 Portfolio: **[rishabhbhartiya.natrajx.in](https://rishabhbhartiya.natrajx.in)**
-- 💼 Projects: [rishabhbhartiya.natrajx.in/projects](https://rishabhbhartiya.natrajx.in/projects)
-- ✍️ Writing: [rishabhbhartiya.natrajx.in/blog](https://rishabhbhartiya.natrajx.in/blog)
-- 🐙 GitHub: [@rishabhbhartiya](https://github.com/rishabhbhartiya)
-- ☕ Ko-fi: [ko-fi.com/rishabhbhartiya](https://ko-fi.com/rishabhbhartiya)
-
-If GitCity is useful to you, a ⭐ on the repo and a mention helps a lot.
-
----
-
-## ❓ FAQ
+## FAQ
 
 **Is this the same as thegitcity.com?**  
-No — completely different. See [COMPARISON.md](./COMPARISON.md) for the full breakdown.
+No — completely different project. See [COMPARISON.md](./COMPARISON.md) for a full breakdown.
+
+**Do I need a GitHub token?**  
+No. The hosted version at `gitcity.natrajx.in` handles auth server-side. Token only needed for self-hosting.
+
+**Can I share someone else's city?**  
+Yes — just use their username in the URL. All data is public GitHub contribution data.
 
 ---
 
-## 📄 License
+## About the Author
 
-MIT © [Rishabh Bhartiya](https://rishabhbhartiya.natrajx.in) — free to use, modify, and distribute.
+Built by **[Rishabh Bhartiya](https://github.com/rishabhbhartiya)** — ML Engineer & full-stack developer. 3 years turning research-grade ideas into production systems.
+
+- Portfolio: [rishabhbhartiya.natrajx.in](https://rishabhbhartiya.natrajx.in)
+- GitHub: [@rishabhbhartiya](https://github.com/rishabhbhartiya)
+- Ko-fi: [ko-fi.com/rishabhbhartiya](https://ko-fi.com/rishabhbhartiya)
+
+If GitCity is useful to you, a star on the repo goes a long way.
+
+---
+
+## License
+
+MIT © [Rishabh Bhartiya](https://github.com/rishabhbhartiya) — free to use, modify, and distribute.
 
 ---
 
 <div align="center">
 
-Made with ☕ by <a href="https://rishabhbhartiya.natrajx.in"><strong>Rishabh Bhartiya</strong></a>
-&nbsp;·&nbsp;
-<a href="https://gitcity.natrajx.in">gitcity.natrajx.in</a>
-&nbsp;·&nbsp;
-<a href="https://rishabhbhartiya.natrajx.in/projects">More projects</a>
-&nbsp;·&nbsp;
-<a href="https://rishabhbhartiya.natrajx.in/blog">Blog</a>
-&nbsp;·&nbsp;
-<a href="https://ko-fi.com/rishabhbhartiya">☕ Ko-fi</a>
+Made with coffee by **[Rishabh Bhartiya](https://github.com/rishabhbhartiya)**
+&nbsp;·&nbsp; [gitcity.natrajx.in](https://gitcity.natrajx.in)
+&nbsp;·&nbsp; [More projects](https://rishabhbhartiya.natrajx.in/projects)
+&nbsp;·&nbsp; [Blog](https://rishabhbhartiya.natrajx.in/blog)
+&nbsp;·&nbsp; [Ko-fi](https://ko-fi.com/rishabhbhartiya)
 
 </div>

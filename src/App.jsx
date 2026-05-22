@@ -1,16 +1,5 @@
 /**
- * App.jsx — GitCity (SEO-Optimized)
- * https://gitcity.natrajx.in
- *
- * Auth flow (no token needed):
- *  1. ?username=torvalds in URL  → auto-fetch
- *  2. localStorage "gh_username" → auto-fetch
- *  3. Neither                    → show GitHubConnect login screen
- *
- * SEO Enhancement:
- *  - Dynamic meta tags per user using react-helmet-async
- *  - Structured data (JSON-LD) for each profile
- *  - Open Graph and Twitter Card support
+ * App.jsx 
  */
 
 import { useState, useEffect } from "react";
@@ -24,7 +13,7 @@ function getUrlParams() {
   const p = new URLSearchParams(window.location.search);
   const pathParts = window.location.pathname.split("/").filter(Boolean);
   const pathUsername = pathParts[0] || "";
-  const pathView = pathParts[1] || ""; // 'simulation', 'isometric', 'heatmap'
+  const pathView = pathParts[1] || ""; 
   return {
     username: p.get("username") || pathUsername || "",
     theme: p.get("theme") || "",

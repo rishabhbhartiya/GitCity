@@ -1,6 +1,5 @@
 /**
  * themes.js — GitSkyline
- * Themes: Matrix, Noir, Aurora, Ocean, Gold, Ice
  */
 
 export const THEMES = {

@@ -1,8 +1,5 @@
 /**
  * IsometricGrid.jsx
- *
- * Fixed-viewBox SVG that scales to fill its container.
- * Buildings grow upward from ground plane.
  */
 
 import { useMemo } from "react";

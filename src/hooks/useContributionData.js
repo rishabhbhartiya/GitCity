@@ -1,8 +1,5 @@
 /**
  * useContributionData.js
- *
- * Processes raw contribution data into cells.
- * Handles single-year and multi-year data from the API.
  */
 
 import { useMemo } from "react";

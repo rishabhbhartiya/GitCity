@@ -1,18 +1,5 @@
 /**
- * CitySimulation.jsx — GitCity v16
- * CHANGES from v15:
- * - Removed Leaves (spring) and Snow weather modes entirely
- * - Weather is now fully automatic — no user controls
- *   · 30 s after simulation start: pre-storm dust begins
- *   · 10 s later: full storm (rain + lightning)
- *   · Storm lasts 60 s, then transitions to mist/fog
- *   · Mist persists for 90 s, then clears
- *   · Next cycle starts at a random interval (60–180 s) after clear
- * - Pre-storm: rolling dust clouds at road level
- * - Post-storm: varied mist patches across city (not uniform)
- * - Audio: rain.mp3 during storm, wind.mp3 (low vol) during dust+mist
- * - music.mp3 plays automatically on load (always on)
- * - Removed Music On/Off button
+ * CitySimulation.jsx 
  */
 
 import { useEffect, useRef, useState, useMemo } from "react";
@@ -102,8 +89,6 @@ function snapRoad(x, z, segs) {
         dist: best.dist,
     };
 }
-
-// ── AABB collision helper ─────────────────────────────────────────────────────
 function aabbPushOut(mover, obstacle) {
     const dx = mover.x - obstacle.x;
     const dz = mover.z - obstacle.z;
@@ -124,19 +109,11 @@ export function CitySimulation({ cells, stats, theme, profile }) {
     const trafficRef = useRef(null);
     const audioRef = useRef(null);
     const playerCarRef = useRef(null);
-
-    // Audio refs for sound effects
     const rainAudioRef = useRef(null);
     const crashAudioRef = useRef(null);
     const blastAudioRef = useRef(null);
-
-    // Weather auto-scheduler — tracks ALL pending timers so none get lost
-    // phase: "clear" | "pre-storm" | "storm" | "mist"
     const weatherPhaseRef = useRef("clear");
-    const weatherTimersRef = useRef([]); // array of all pending timer IDs
-
-
-
+    const weatherTimersRef = useRef([]); 
     const [loaded, setLoaded] = useState(false);
     const [error, setError] = useState(null);
     const [card, setCard] = useState(null);
@@ -150,7 +127,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
     const maxTotal = useMemo(() => Math.max(...districts.map((d) => d.total), 1), [districts]);
     const username = profile?.name || "";
 
-    // ── Load Three.js ─────────────────────────────────────────────────────────
     useEffect(() => {
         if (window.THREE) { setLoaded(true); return; }
         const s = document.createElement("script");
@@ -166,12 +142,10 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         return () => clearTimeout(t);
     }, [loaded]);
 
-    // ── Music (always on, auto-play) ──────────────────────────────────────────
     useEffect(() => {
         const audio = new Audio("/music.mp3");
         audio.loop = true; audio.volume = 0.35;
         audioRef.current = audio;
-        // Auto-play on first user interaction (browser autoplay policy)
         const tryPlay = () => {
             audio.play().catch(() => { });
             window.removeEventListener("click", tryPlay);
@@ -179,7 +153,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         };
         window.addEventListener("click", tryPlay);
         window.addEventListener("keydown", tryPlay);
-        // Also try immediately (works after prior interaction)
         audio.play().catch(() => { });
         return () => {
             audio.pause(); audio.src = "";
@@ -188,7 +161,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         };
     }, []);
 
-    // ── Weather Audio (rain.mp3 used for both storm and wind/mist at diff volumes) ──
     useEffect(() => {
         const rainAudio = new Audio("/rain.mp3");
         rainAudio.loop = true; rainAudio.volume = 0;
@@ -196,9 +168,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         return () => { rainAudio.pause(); rainAudio.src = ""; };
     }, []);
 
-    // ── Collision Sound Effects ───────────────────────────────────────────────
-    // FIX: Unlock audio context on first user interaction (browser autoplay policy).
-    // Without this, .play() silently fails until the user has interacted with the page.
     useEffect(() => {
         const crashAudio = new Audio("/crash.mp3");
         crashAudio.volume = 0.8;
@@ -209,9 +178,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         blastAudio.volume = 0.9;
         blastAudio.preload = "auto";
         blastAudioRef.current = blastAudio;
-
-        // Unlock both audio elements on first user gesture so subsequent
-        // programmatic .play() calls are never blocked by the browser.
         const unlock = () => {
             [crashAudio, blastAudio].forEach(a => {
                 a.play().then(() => { a.pause(); a.currentTime = 0; }).catch(() => { });
@@ -230,7 +196,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         };
     }, []);
 
-    // ── MAIN THREE.JS EFFECT ──────────────────────────────────────────────────
     useEffect(() => {
         if (!loaded || !mountRef.current || !cells.length) return;
         const THREE = window.THREE;
@@ -272,8 +237,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         scene.add(sun);
         const hemi = new THREE.HemisphereLight(0x0a1428, 0x080810, 0.25);
         scene.add(hemi);
-
-        // Stars
         const starsGeo = new THREE.BufferGeometry();
         const starPos = new Float32Array(900 * 3);
         for (let i = 0; i < 900; i++) {
@@ -293,8 +256,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         sunDisc.position.set(300, 320, -200);
         sunDisc.visible = false;
         scene.add(sunDisc);
-
-        // Clouds
         const cloudGroup = new THREE.Group();
         scene.add(cloudGroup);
         cloudGroup.visible = false;
@@ -338,16 +299,10 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         });
 
         const roadSegs = buildRoadSegs(cols, rows, ox, oz, BW, BD);
-
-        // ── WEATHER SYSTEM ────────────────────────────────────────────────────
         const weather = createWeatherSystem(scene, THREE, cityW, cityD);
         weatherRef.current = weather;
-        // Weather starts clear; auto-scheduler drives all phase transitions
-
-        // ── COLLISION BOXES ───────────────────────────────────────────────────
         const collisionBoxes = [];
 
-        // ── ROAD DRAWING ──────────────────────────────────────────────────────
         function drawRoad(x1, z1, x2, z2, w = ROAD) {
             const dx = x2 - x1, dz = z2 - z1, len = Math.sqrt(dx * dx + dz * dz);
             if (len < 0.5) return;
@@ -366,10 +321,8 @@ export function CitySimulation({ cells, stats, theme, profile }) {
             }
         }
 
-        // ── FOOTPATH DRAWING ──────────────────────────────────────────────────
         const FOOTPATH_OFFSET = ROAD / 2 + 1.1;
         const FURNITURE_OFFSET = ROAD / 2 + 1.8;
-
         function drawFootpath(x1, z1, x2, z2) {
             const dx = x2 - x1, dz = z2 - z1;
             const len = Math.sqrt(dx * dx + dz * dz);
@@ -420,8 +373,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         }
 
         const footpathPoints = [];
-
-        // ── LAMP POST ────────────────────────────────────────────────────────
         function addLamp(x, z, roadTarget, axis) {
             let armDirX = 0, armDirZ = 0;
             if (axis === "x") {
@@ -442,8 +393,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
 
         const trafficSignals = [];
         const animatedSigns = [];
-
-        // ── Build roads + footpaths ───────────────────────────────────────────
         for (let r = 0; r <= rows; r++) {
             const rz = oz + r * (BD + ROAD) + ROAD / 2;
             let minC = -1, maxC = -1;
@@ -509,7 +458,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
             }
         }
 
-        // Intersection corner pads + traffic signals
         for (let r = 0; r <= rows; r++) {
             for (let c = 0; c <= cols; c++) {
                 const adj =
@@ -536,7 +484,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
             }
         }
 
-        // ── Helper: is a point safely on footpath ─────────────────────────────
         function isOnFootpath(x, z) {
             for (let di = 0; di < districts.length; di++) {
                 const col = di % cols, row = Math.floor(di / cols);
@@ -556,7 +503,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
             return true;
         }
 
-        // ── CENTRAL MONUMENT ─────────────────────────────────────────────────
         const monP = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 14, 8), lampMat);
         monP.position.y = 7;
         scene.add(monP);
@@ -566,25 +512,18 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         const monLight = new THREE.PointLight(accentCol, 5, 55);
         monLight.position.y = 15;
         scene.add(monLight);
-
         decoratePlaza(scene, THREE, 0, 0, 18, 0.2, isOnFootpath);
-
-        // ── DISTRICTS & BUILDINGS ─────────────────────────────────────────────
         const blockInfos = [], buildingObjs = [], skyBeams = [];
         const globalMax = stats.maxCount || 1;
-
         districts.forEach((dist, di) => {
             const col = di % cols, row = Math.floor(di / cols);
             const rand = rng(di * 6271 + 1);
             const bx0 = ox + col * (BW + ROAD) + ROAD, bz0 = oz + row * (BD + ROAD) + ROAD;
             blockInfos.push({ x: bx0 + BW / 2, z: bz0 + BD / 2, w: BW, d: BD, label: dist.label, di });
-
             const sw = new THREE.Mesh(new THREE.BoxGeometry(BW, 0.28, BD), sidewMat);
             sw.position.set(bx0 + BW / 2, 0.14, bz0 + BD / 2);
             sw.receiveShadow = true;
             scene.add(sw);
-
-            // Street furniture on confirmed footpath points only
             const nearFP = footpathPoints.filter(p =>
                 Math.abs(p.x - (bx0 + BW / 2)) < BW * 0.8 &&
                 Math.abs(p.z - (bz0 + BD / 2)) < BD * 0.8 &&
@@ -595,8 +534,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
             if (rand() < 0.35 && nearFP[fpIdx]) { const fp = nearFP[fpIdx++]; addBench(scene, THREE, fp.x, fp.z); }
             if (rand() < 0.22 && nearFP[fpIdx]) { const fp = nearFP[fpIdx++]; addKiosk(scene, THREE, fp.x, fp.z); }
             if (rand() < 0.28 && nearFP[fpIdx]) { const fp = nearFP[fpIdx++]; addGarden(scene, THREE, fp.x, fp.z, 0.75); }
-
-            // ── Buildings ─────────────────────────────────────────────────────
             dist.cells.forEach((cell) => {
                 const { week, day, count, date } = cell;
                 if (count === 0) return;
@@ -695,7 +632,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
             });
         });
 
-        // ── Sky beams ─────────────────────────────────────────────────────────
         const peakBeam = skyBeams.reduce((a, b) => (!a || (b.bH !== undefined && b.bH > a.bH)) ? b : a, null);
         const finalBeams = [];
         if (peakBeam && peakBeam.wx !== undefined) {
@@ -721,16 +657,10 @@ export function CitySimulation({ cells, stats, theme, profile }) {
             vBeam.rotation.x = Math.PI; vBeam.position.set(pbx, pbH - 150, pbz);
             scene.add(vBeam); finalBeams.push({ mesh: vBeam, isVertical: true });
         }
-
-        // ── PEDESTRIAN SYSTEM ─────────────────────────────────────────────────
         const pedSystem = createPedestrianSystem(
             scene, THREE, districts, cols, ox, oz, BW, BD, ROAD,
             footpathPoints, roadSegs
         );
-
-        // ── TRAFFIC SYSTEM ────────────────────────────────────────────────────
-        // onCollision fires exactly once (inside checkCollisions) the moment the
-        // blast is triggered. We play crash.mp3 immediately and blast.mp3 3 s later.
         const onCollision = () => {
             const crash = crashAudioRef.current;
             if (crash) { crash.currentTime = 0; crash.play().catch(() => { }); }
@@ -744,15 +674,8 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         const traffic = createTrafficSystem(scene, THREE, roadSegs, cityW, cityD, onCollision);
         traffic.addCars(Math.min(districts.length, 30));
         trafficRef.current = traffic;
-
-        // ── WEATHER AUTO-SCHEDULER ────────────────────────────────────────────
-        // Sequence: clear → pre-storm (15s dust) → storm (60s rain) → mist (90s) → clear → repeat
-        // First cycle fires 30 s after boot. Next cycles: random 60–180 s gap.
-        // All timer IDs tracked in weatherTimersRef so cleanup cancels every one.
-
         function scheduleTimer(fn, ms) {
             const id = setTimeout(() => {
-                // Remove this id from the list once it fires
                 weatherTimersRef.current = weatherTimersRef.current.filter(x => x !== id);
                 fn();
             }, ms);
@@ -769,24 +692,19 @@ export function CitySimulation({ cells, stats, theme, profile }) {
             weatherPhaseRef.current = ph;
             const ws = weatherRef.current;
             if (ws && ws.setPhase) ws.setPhase(ph);
-
-            // Audio: rain.mp3 doubles as wind sound at lower volume
             const rain = rainAudioRef.current;
             if (!rain) return;
 
             if (ph === "pre-storm") {
-                // Soft rain sound mimics distant wind/dust
                 rain.volume = 0.12;
                 rain.play().catch(() => { });
             } else if (ph === "storm") {
                 rain.volume = 0.4;
                 rain.play().catch(() => { });
             } else if (ph === "mist") {
-                // Very soft rain ambience for misty atmosphere
                 rain.volume = 0.08;
                 rain.play().catch(() => { });
             } else {
-                // clear
                 rain.pause();
                 rain.currentTime = 0;
             }
@@ -794,16 +712,12 @@ export function CitySimulation({ cells, stats, theme, profile }) {
 
         function startStormCycle(delayMs) {
             clearWeatherTimers();
-            // 1. Pre-storm dust after delay
             scheduleTimer(() => {
                 applyWeatherPhase("pre-storm");
-                // 2. Full storm 15s later
                 scheduleTimer(() => {
                     applyWeatherPhase("storm");
-                    // 3. Mist 60s later
                     scheduleTimer(() => {
                         applyWeatherPhase("mist");
-                        // 4. Clear 90s later, then random repeat
                         scheduleTimer(() => {
                             applyWeatherPhase("clear");
                             const nextGap = (60 + Math.random() * 120) * 1000;
@@ -813,18 +727,13 @@ export function CitySimulation({ cells, stats, theme, profile }) {
                 }, 15000);
             }, delayMs);
         }
-
-        // First cycle 30 s after simulation starts
         startStormCycle(30000);
 
-        // ── PLAYER CAR ────────────────────────────────────────────────────────
         const playerCar = buildVehicle(scene, THREE, "sedan", accentCol.getHex());
-
         const LANE_OFFSET = 1.8;
         const spawnSeg = roadSegs.find(s =>
             s.len > 30 && Math.abs(s.dz) < 0.15
         ) || roadSegs[Math.floor(roadSegs.length / 2)];
-
         const spawnT = 0.5;
         const spawnCX = spawnSeg.x1 + spawnSeg.dx * spawnSeg.len * spawnT;
         const spawnCZ = spawnSeg.z1 + spawnSeg.dz * spawnSeg.len * spawnT;
@@ -837,8 +746,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         playerCarRef.current = playerCar;
 
         const PLAYER_HW = 1.1, PLAYER_HD = 2.2;
-
-        // ── PARKED SPECIAL VEHICLES ───────────────────────────────────────────
         const parkRow = oz + BD + ROAD * 2 + 1;
 
         function parkVehicle(type, x, z, ry) {
@@ -854,15 +761,11 @@ export function CitySimulation({ cells, stats, theme, profile }) {
         const schoolBus = parkVehicle("schoolbus", ox + 22, parkRow, 0);
         const taxi = parkVehicle("taxi", ox + 30, parkRow, Math.PI);
         const sportscar = parkVehicle("sportscar", ox + 38, parkRow, Math.PI / 3);
-
         const emergencyVehicles = [ambulance, police];
-
-        // ── EVENT HANDLERS ────────────────────────────────────────────────────
         const rayMeshes = buildingObjs.map((b) => b.mesh);
         const raycaster = new THREE.Raycaster();
         const canvas = renderer.domElement;
         const mouse = mouseRef.current;
-
         const onMD = (e) => { mouse.down = true; mouse.lx = e.clientX; mouse.ly = e.clientY; mouse.orbit = true; };
         const onMU = () => { mouse.down = false; };
         const onMM = (e) => {
@@ -907,7 +810,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
 
             const keys = keysRef.current, m = mouseRef.current, car = playerCar;
 
-            // Sky & Lighting — always night
             scene.background.set(0x05091c);
             scene.fog.color.set(0x05091c);
             renderer.toneMappingExposure = 1.6;
@@ -925,7 +827,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
             emergencyVehicles.forEach(v => updateVehicleLights(v, dt, now));
             updateSignageAnimations(animatedSigns, now);
 
-            // Vehicle movement
             let spd = 0;
             const fwdKey = keys["ArrowUp"] || keys["w"] || keys["W"];
             const bkKey = keys["ArrowDown"] || keys["s"] || keys["S"];
@@ -967,8 +868,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
 
             car.position.y = 0; car.rotation.x = 0; car.rotation.z = 0;
             setKmh(Math.abs(Math.round(spd * 3.6 * 0.28)));
-
-            // Camera
             if (m.orbit) {
                 const dist2 = 16 * m.zoom;
                 orbitTgt.lerp(car.position.clone(), 0.08);
@@ -985,8 +884,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
                 m.ox = car.rotation.y + Math.PI; m.oy = 0.3;
             }
             camera.position.copy(camP); camera.lookAt(camL);
-
-            // Location label
             let locLabel = "GitCity Roads";
             for (const bi of blockInfos) {
                 if (Math.abs(car.position.x - bi.x) < bi.w / 2 + 3 && Math.abs(car.position.z - bi.z) < bi.d / 2 + 3) {
@@ -998,8 +895,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
 
             traffic.update(dt, camera);
             pedSystem.update(dt);
-
-            // ── Sync traffic-signal visuals to live light states ──────────────
             if (trafficSignals.length > 0) {
                 const tLights = traffic.getLights();
                 for (const sig of trafficSignals) {
@@ -1038,8 +933,6 @@ export function CitySimulation({ cells, stats, theme, profile }) {
                 else
                     bo.mesh.material.emissive.copy(bo.mesh.userData.origEmissive);
             });
-
-            // Hover tooltips
             hoverFr++;
             const isDriving = fwdKey || bkKey;
             if (!isDriving && hoverFr % 6 === 0 && rayMeshes.length > 0) {
