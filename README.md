@@ -36,7 +36,7 @@ https://gitcity.natrajx.in/{username}/simulation     <-  driveable city
 
 ---
 
-## Three Views of Your City
+## Views of Your City
 
 <p align="center">
   <img src="./screenshots/isometric.gif" alt="Isometric 3D Skyline" width="90%" />
